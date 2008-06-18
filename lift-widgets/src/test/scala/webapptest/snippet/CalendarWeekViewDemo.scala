@@ -102,7 +102,8 @@ class CalendarWeekViewDemo {
 
     val item5 = CalendarItem("asdff", c5, CalendarType.MEETING) optional (
         _ end (c5End),
-        _ subject("Quick chat")
+        _ subject("Quick chat"),
+        _ baseCSSClassName("greenItem")
         )
 
     val list = item1 :: item2 :: item3 :: item4 :: item5 :: Nil;

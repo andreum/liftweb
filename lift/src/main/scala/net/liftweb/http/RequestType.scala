@@ -10,11 +10,11 @@ import javax.servlet.http.{HttpServletRequest}
 
 @serializable
 abstract class RequestType {
-  def post_? : boolean = false
-  def get_? : boolean = false
-  def head_? : boolean = false
-  def put_? : boolean = false
-  def delete_? : boolean = false
+  def post_? : Boolean = false
+  def get_? : Boolean = false
+  def head_? : Boolean = false
+  def put_? : Boolean = false
+  def delete_? : Boolean = false
 }
 
 @serializable

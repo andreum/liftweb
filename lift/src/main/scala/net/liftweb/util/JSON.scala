@@ -13,7 +13,7 @@ package net.liftweb.util;
  * limitations under the License.
  */
 
-import scala.util.parsing.combinatorold.{Parsers, ImplicitConversions, ~, mkTilde}
+import scala.util.parsing.combinator.{Parsers, ImplicitConversions}
 import Helpers._
 
 object JSONParser extends SafeSeqParser with ImplicitConversions { 
@@ -27,35 +27,41 @@ object JSONParser extends SafeSeqParser with ImplicitConversions {
   
   def whitespace = elem(' ') | elem('\t') | elem('\n') | elem('\r')
   
-  def spaces = discard(rep(whitespace))
+  def spaces = rep(whitespace)
   
   
-  def jsonObject: Parser[Map[String, Any]] = ( spaces ~ '{' ~ spaces ~ members ~ spaces ~ '}' ~ spaces ^^ {case xs =>
+  def jsonObject: Parser[Map[String, Any]] = ( spaces ~ '{' ~ spaces ~> members <~ spaces ~ '}' ~ spaces ^^ {case xs =>
     Map(xs :_*)
     } )  |
-    spaces ~'{' ~ spaces ~ '}' ~ spaces  ^^ Map.empty
+    spaces ~'{' ~ spaces ~ '}' ~ spaces  ^^ {case _ => Map.empty}
     
   
-  def members = rep1sep(pair, pair, spaces ~ ',' ~ spaces)
+  def members = rep1sep(pair, spaces ~ ',' ~ spaces)
   
-  def pair = (string | pairId) ~ spaces ~ ':' ~ spaces ~ theValue ^^ {case s ~ v => (s,v)}
+  def pair: Parser[(String, Any)] = (string | pairId) ~ spaces ~ ':' ~ spaces ~ theValue ^^ {case s ~ _ ~ _ ~ _ ~ v => (s,v)}
   
   def pairChar(in: Char): Boolean = in.isLetter || in.isDigit || in == '_'
   
   def pairId: Parser[String] = rep1(elem("pairChar", pairChar)) ^^ {case s => s.mkString}
   
-  def string = ('\'' ~ rep(not('\'') ~ achar) ~ '\'' ^^ {case xs => xs.mkString("")}) |
-               ('"' ~ rep(not('"') ~ achar) ~ '"' ^^ {case xs => xs.mkString("")})
+  def string: Parser[String] = ('\'' ~> rep(not('\'') ~> achar) <~ '\'' ^^ {case xs => xs.mkString("")}) |
+               ('"' ~> rep(not('"') ~> achar) <~ '"' ^^ {case xs => xs.mkString("")})
                
-  def achar = ('\\' ~ ('"' ^^ '"' | '\\' ^^ '\\' | '/' ^^ '/' | 'b' ^^ '\b' | 'n' ^^ '\n' | 'r' ^^ '\r' | 't' ^^ '\t' | 
-    'u' ~ repN(4, hexDigit) ^^ {case dg => Integer.parseInt(dg.mkString(""), 16).toChar})) | elem("any char", c => c != '"' && c >= ' ')
+               def achar = ('\\' ~> ('"' ^^ {case _ => '"'} | 
+               '\\' ^^ {case _ => '\\'} | 
+               '/' ^^ {case _ => '/'} |
+               'b' ^^ {case _ => '\b'} | 
+               'n' ^^ {case _ => '\n'} |
+               'r' ^^ {case _ => '\r'} |
+               't' ^^ {case _ => '\t'} | 
+               'u' ~> repN(4, hexDigit) ^^ {case dg => Integer.parseInt(dg.mkString(""), 16).toChar})) | (elem("any char", c => c != '"' && c >= ' '))
   
   def number: Parser[Double] =  intFracExp | intFrac | intExp |  (anInt ^^ {case n => n.toDouble})
   
   def exp = e ~ digits ^^ {case x ~ d => d.mkString("").toInt * x}
   
-  def e = ('e' ~ '-' ^^ -1) | ('e' ~ '+' ^^ 1) | ('e' ^^ 1) |
-    ('E' ~ '-' ^^ -1) | ('E' ~ '+' ^^ 1) | ('E' ^^ 1)
+  def e = ('e' ~ '-' ^^ {case _ => -1}) | ('e' ~ '+' ^^ {case _ => 1}) | ('e' ^^ {case _ => 1}) |
+  ('E' ~ '-' ^^ {case _ => -1}) | ('E' ~ '+' ^^ {case _ => 1}) | ('E' ^^ {case _ => 1})
   
   def intFracExp: Parser[Double] = anInt ~ frac ~ exp ^^ {case i ~ f ~ exp => ((i.toString+"."+f+"e"+exp).toDouble)}
   
@@ -79,13 +85,13 @@ object JSONParser extends SafeSeqParser with ImplicitConversions {
     
   def theValue: Parser[Any] = string | number | jsonObject | array | istrue | isfalse | isnull 
   
-  def array: Parser[List[Any]] = spaces ~ '[' ~ spaces ~ elements ~ spaces ~ ']' ~ spaces ^^ {case e => e}
+  def array: Parser[List[Any]] = spaces ~ '[' ~ spaces ~> elements <~ spaces ~ ']' ~ spaces ^^ {case e => e}
     
   def elements = repsep(theValue, spaces ~ ',' ~ spaces)
   
-  def istrue = accept("true".toList) ^^ true
-  def isfalse = accept("false".toList) ^^ false
-  def isnull = accept("null".toList) ^^ Empty
+  def istrue: Parser[Boolean] = acceptSeq("true") ^^ {case _ => true}
+  def isfalse: Parser[Boolean] = acceptSeq("false") ^^ {case _ => false}
+  def isnull = acceptSeq("null") ^^ {case _ => Empty}
   
   // def parse(in: String) = theValue(in)
 }

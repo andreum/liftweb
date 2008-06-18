@@ -120,7 +120,7 @@ class CalendarWeekView(val when: Calendar, val meta: WeekViewMeta) {
         val cal = Calendar getInstance;
         cal set(HOUR_OF_DAY, 0)
         cal set(MINUTE, 0)
-        (for (val i <- 0 to 23) yield
+        for (val i <- 0 to 23) yield
         try{
           <tr>
             <td class="wkHour"><div>{Unparsed(meta.timeFormatter format(cal getTime))}</div></td>
@@ -143,7 +143,6 @@ class CalendarWeekView(val when: Calendar, val meta: WeekViewMeta) {
         } finally {
           cal add(HOUR_OF_DAY, 1)
         }
-        )
       }</table>
     </div>
     </div>

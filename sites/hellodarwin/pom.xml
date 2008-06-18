@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>net.liftweb.demo</groupId>
   <artifactId>hellodarwin</artifactId>
-  <version>0.9-SNAPSHOT</version>
+  <version>0.10-SNAPSHOT</version>
   <packaging>war</packaging>
   <name>HelloDarwin tutorial application</name>
   <!--

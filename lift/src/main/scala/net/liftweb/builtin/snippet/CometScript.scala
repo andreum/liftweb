@@ -20,7 +20,7 @@ import scala.xml._
 
 class CometScript {
   def javaScript: NodeSeq = {
-    val uri = S.request.map(_.contextPath).openOr("") + S.uri
+    val uri = S.encodeURL(S.request.map(_.contextPath).openOr("") + S.uri)
 
     (<script type="text/javascript">
     // {Unparsed(

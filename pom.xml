@@ -5,7 +5,7 @@
   <artifactId>lift</artifactId>
   <packaging>pom</packaging>
   <name>Lift</name>
-  <version>0.9-SNAPSHOT</version>
+  <version>0.10-SNAPSHOT</version>
   <url>http://liftweb.net</url>
   <inceptionYear>2007</inceptionYear>
   <description>
@@ -113,6 +113,15 @@ Lift is a scala web framework.
       <id>tyler.weir</id>
       <name>Tyler Weir</name>
       <timezone>-5</timezone>
+    </developer>
+    <developer>
+      <id>timperrett</id>
+      <name>Tim Perrett</name>
+      <email>hello [at] timperrett.com</email>
+      <timezone>+0</timezone>
+      <roles>
+        <role>Installation and Deployment</role>
+      </roles>
     </developer>
   </developers>
 

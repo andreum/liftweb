@@ -50,6 +50,12 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {self: A =>
   def beforeDelete: List[(A) => Any] = Nil
   def afterDelete: List[(A) => Any] = Nil
   
+  /**
+  * If there are model-specific validations to perform, override this
+  * method and return an additional list of validations to perform
+  */
+  def validation: List[A => List[FieldError]] = Nil
+  
   def afterCommit: List[A => Unit] = Nil
   
   def dbDefaultConnectionIdentifier: ConnectionIdentifier = DefaultConnectionIdentifier
@@ -310,42 +316,27 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {self: A =>
   
   private[mapper] def ??(meth: Method, inst: A) = meth.invoke(inst, null).asInstanceOf[MappedField[AnyBound, A]]
   
-  def dirty_?(toTest: A) : boolean = {
-    mappedFieldArray.foreach {
-      mft =>      
-	if (??(mft.method, toTest).dirty_?) return true
-    }
-    false
-  }
+  def dirty_?(toTest: A): Boolean = mappedFieldList.exists(
+  mft =>
+  ??(mft.method, toTest).dirty_?
+  )
   
-  def indexedField(toSave : A) : Can[MappedField[Any, A]] = indexMap.map(im => ??(mappedColumns(im), toSave))
-  /*
-    if (indexMap eq null) Empty else 
-      Full(??(mappedColumns(indexMap), toSave))
-  }*/
-  
+  def indexedField(toSave : A) : Can[MappedField[Any, A]] = indexMap.map(im => ??(mappedColumns(im), toSave))  
   
   def saved_?(toSave: A): Boolean = (for (im <- indexMap; indF <- indexedField(toSave)) yield (indF.dbIndexFieldIndicatesSaved_?)).openOr(true)
-      /*
-      {
-    if (indexMap eq null) true else {
-      indexedField(toSave).map(_.dbIndexFieldIndicatesSaved_?) openOr true
-    }
-  }*/
   
   def whatToSet(toSave : A) : String = {
     mappedColumns.filter{c => ??(c._2, toSave).dirty_?}.map{c => c._1 + " = ?"}.toList.mkString("", ",", "")
   }
   
-  def validate(toValidate : A) : List[FieldError] = {
+  def validate(toValidate: A): List[FieldError] = {
     val saved_? = this.saved_?(toValidate)
     _beforeValidation(toValidate)
     if (saved_?) _beforeValidationOnUpdate(toValidate) else _beforeValidationOnCreate(toValidate)
     
-    var ret : List[FieldError] = Nil
+    val ret: List[FieldError] = mappedFieldList.flatMap(f => ??(f.method, toValidate).validate) :::
+    validation.flatMap(_(toValidate))
     
-    mappedFieldArray.foreach{f => ret = ret ::: ??(f.method, toValidate).validate}
-
     _afterValidation(toValidate)
     if (saved_?) _afterValidationOnUpdate(toValidate) else _afterValidationOnCreate(toValidate)
 
@@ -354,15 +345,11 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {self: A =>
   
   val elemName = getClass.getSuperclass.getName.split("\\.").toList.last
   
-  def toXml(what: A): NodeSeq = {
-    
+  def toXml(what: A): NodeSeq = 
     Elem(null,elemName,
-         mappedFieldArray.foldRight(Null.asInstanceOf[MetaData]) {(p, md) => val fld = ??(p.method, what)
+         mappedFieldList.foldRight(Null.asInstanceOf[MetaData]) {(p, md) => val fld = ??(p.method, what)
 									   new UnprefixedAttribute(p.name, Text(fld.toString), md)}
          ,TopScope)
-    //    Elem("", 
-    //    (mappedFieldArray.elements.map{p => ??(p._2, in).asString}).toList.mkString("", ",", "")
-  }
   
   /**
     * Returns true if none of the fields are dirty
@@ -530,8 +517,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {self: A =>
     ret.toList
   }
   
-  def appendFieldToStrings(in: A): String = mappedFieldArray.map(p => ??(p.method, in).asString).mkString(",")
-  
+  def appendFieldToStrings(in: A): String = mappedFieldList.map(p => ??(p.method, in).asString).mkString(",")
   
   private val columnNameToMappee = new HashMap[String, Can[(ResultSet, Int, A) => Unit]]
   
@@ -617,12 +603,12 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {self: A =>
   }
   
   def fieldMapperPf(transform: (BaseOwnedMappedField[A] => NodeSeq), actual: A): PartialFunction[String, NodeSeq => NodeSeq] = {
-    Map.empty ++ mappedFieldArray.map { mf => 
+    Map.empty ++ mappedFieldList.map ( mf => 
       (mf.name, ((ignore: NodeSeq) => transform(??(mf.method, actual))))
-    }
+    )
   }
   
-  def checkFieldNames(in: A): Unit = mappedFieldArray.foreach(f =>
+  def checkFieldNames(in: A): Unit = mappedFieldList.foreach(f =>
     ??(f.method, in) match {
       case field if (field.i_name_! eq null) => field.setName_!(f.name)
       case _ =>
@@ -654,7 +640,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {self: A =>
   
   private val _mappedFields  = new HashMap[String, Method];
   
-  private[mapper] var mappedFieldArray: List[FieldHolder[A]] = Nil; // new Array[Triple[String, Method, MappedField[Any,Any]]]();
+  private[mapper] var mappedFieldList: List[FieldHolder[A]] = Nil; // new Array[Triple[String, Method, MappedField[Any,Any]]]();
   
   private var mappedCallbacks: List[(String, Method)] = Nil
   
@@ -706,8 +692,8 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {self: A =>
     
     tArray.foreach(mft => resArray += mft)      
     
-    mappedFieldArray = resArray.toList
-    mappedFieldArray.foreach(ae => _mappedFields(ae.name) = ae.method)
+    mappedFieldList = resArray.toList
+    mappedFieldList.foreach(ae => _mappedFields(ae.name) = ae.method)
   }
 
   val columnNamesForInsert = (mappedColumnInfo.filter(!_._2.dbPrimaryKey_?).map(_._1)).toList.mkString(",")
@@ -723,17 +709,15 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {self: A =>
 
   private def internalTableName_$_$ = getClass.getSuperclass.getName.split("\\.").toList.last
   
-  def htmlHeaders : NodeSeq = {
-    mappedFieldArray.filter{mft => mft.field.dbDisplay_?}.map {mft => <th>{mft.field.displayName}</th>}.toList
-    // mappedFieldInfo.elements.filter{e => e._2.db_display_?}. map {e => <th>{e._1}</th>}.toList
-  }
+  def htmlHeaders : NodeSeq = 
+    mappedFieldList.filter(_.field.dbDisplay_?).map(mft => <th>{mft.field.displayName}</th>)
   
-  def mappedFields: Seq[BaseMappedField] = mappedFieldArray.map(f => f.field)
+  def mappedFields: Seq[BaseMappedField] = mappedFieldList.map(f => f.field)
   
-  def doHtmlLine(toLine: A): NodeSeq = mappedFieldArray.filter(_.field.dbDisplay_?).map(mft => <td>{??(mft.method, toLine).asHtml}</td>)
+  def doHtmlLine(toLine: A): NodeSeq = mappedFieldList.filter(_.field.dbDisplay_?).map(mft => <td>{??(mft.method, toLine).asHtml}</td>)
   
   def asJs(actual: A): JsExp = {
-    JE.JsObj(("$lift_class", JE.Str(dbTableName)) :: mappedFieldArray.
+    JE.JsObj(("$lift_class", JE.Str(dbTableName)) :: mappedFieldList.
     map(f => ??(f.method, actual)).filter(_.renderJs_?).flatMap(_.asJs).toList :::
     actual.suplementalJs(Empty) :_*)
   }
@@ -743,7 +727,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {self: A =>
     */
   def asJSON(actual: A, sb: StringBuilder): StringBuilder = {
     sb.append('{')
-    mappedFieldArray.foreach{
+    mappedFieldList.foreach{
       f => 
       sb.append(f.name)
       sb.append(':')
@@ -754,14 +738,13 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {self: A =>
     sb
   }
   
-  def asHtml(toLine: A): NodeSeq = {
-    Text(internalTableName_$_$) :: Text("={ ") :: 
-    mappedFieldArray.filter(_.field.dbDisplay_?).map{
-      mft => 
-	val field = ??(mft.method, toLine)
-      <span>{field.displayName}={field.asHtml}&nbsp;</span>} :::
-    List(Text(" }"))
-  }
+  def asHtml(toLine: A): NodeSeq = 
+  Text(internalTableName_$_$) :: Text("={ ") :: 
+  (for (mft <- mappedFieldList if mft.field.dbDisplay_? ;
+  val field = ??(mft.method, toLine)) yield
+  <span>{field.displayName}={field.asHtml}&nbsp;</span>
+  ) :::List(Text(" }"))
+      
   
   def formatFormLine(displayName: NodeSeq, form: NodeSeq): Node = (<xml:group><tr>
   <td>{displayName}</td>
@@ -769,10 +752,10 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {self: A =>
   </tr></xml:group>)
   
   def toForm(toMap: A): NodeSeq =
-    mappedFieldArray.map(e => ??(e.method, toMap)).filter(_.dbDisplay_?).flatMap {
+    mappedFieldList.map(e => ??(e.method, toMap)).filter(_.dbDisplay_?).flatMap (
       field =>
         field.toForm.toList.map(form => formatFormLine(Text(field.displayName), form))
-    }
+    )
   
   /**
    * Given the prototype field (the field on the Singleton), get the field from the instance
@@ -973,7 +956,7 @@ trait KeyedMetaMapper[Type, A<:KeyedMapper[Type, A]] extends MetaMapper[A] with 
   def asSafeJs(actual: A, f: KeyObfuscator): JsExp = {
     val pk = actual.primaryKeyField
     val first = (pk.name, JE.Str(f.obscure(self, pk.is)))
-    JE.JsObj(first :: ("$lift_class", JE.Str(dbTableName)) :: mappedFieldArray.
+    JE.JsObj(first :: ("$lift_class", JE.Str(dbTableName)) :: mappedFieldList.
     map(f => this.??(f.method, actual)).
     filter(f => !f.dbPrimaryKey_? && f.renderJs_?).flatMap{
       case fk:  Q => 
@@ -1150,7 +1133,7 @@ trait KeyedMetaMapper[Type, A<:KeyedMapper[Type, A]] extends MetaMapper[A] with 
     val found = for (
         req <- S.request.toList;
       (param, value :: _) <- req.params;
-      fh <- mappedFieldArray if fh.field.dbIndexed_? == true && fh.name.equals(param)
+      fh <- mappedFieldList if fh.field.dbIndexed_? == true && fh.name.equals(param)
     ) yield find(value)
     
     found.filter(obj => obj match {

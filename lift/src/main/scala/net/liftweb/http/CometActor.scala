@@ -10,7 +10,7 @@ import scala.actors.{Actor, Exit}
 import scala.actors.Actor._
 import scala.collection.mutable.{ListBuffer}
 import net.liftweb.util.Helpers._
-import net.liftweb.util.{Helpers, Log, Can, Full, Empty, Failure}
+import net.liftweb.util.{Helpers, Log, Can, Full, Empty, Failure, BindHelpers}
 import scala.xml.{NodeSeq, Text, Elem, Unparsed, Node, Group, Null, PrefixedAttribute, UnprefixedAttribute}
 import scala.collection.immutable.TreeMap
 import scala.collection.mutable.{HashSet, ListBuffer}
@@ -29,19 +29,31 @@ object ActorWatcher extends Actor {
   def act = loop {
     react {
       case Exit(actor, why: Throwable) =>
-      actor.start
-      Log.error("The ActorWatcher restarted "+actor+" because "+why)
+      failureFuncs.foreach(f => tryo(f(actor, why)))
       
       case _ =>
     }
   }
+  
+  private def startAgain(a: Actor, ignore: Throwable) {a.start}
+
+  private def logActorFailure(actor: Actor, why: Throwable) {
+      Log.error("The ActorWatcher restarted "+actor+" because "+why, why)
+  }    
+  
+  /**
+  * If there's something to do in addition to starting the actor up, pre-pend the
+  * actor to this List
+  */
+  var failureFuncs: List[(Actor, Throwable) => Unit] = logActorFailure _ :: 
+  startAgain _ :: Nil
   
   this.start
   this.trapExit = true
 }
 
 @serializable 
-abstract class CometActor(val theSession: LiftSession, val name: Can[String], val defaultXml: NodeSeq, val attributes: Map[String, String]) extends Actor {
+abstract class CometActor(val theSession: LiftSession, val name: Can[String], val defaultXml: NodeSeq, val attributes: Map[String, String]) extends Actor with BindHelpers {
   val uniqueId = "LC"+randomString(20)
   private var lastRenderTime = CometActor.next
   private var lastRendering: RenderOut = RenderOut(Full(defaultXml),
@@ -267,8 +279,8 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
   
   def composeFunction_i = highPriority orElse mediumPriority orElse _mediumPriority orElse lowPriority orElse _lowPriority
   
-  def bind(prefix: String, vals: (String, NodeSeq)*): NodeSeq = Helpers.bind(prefix, defaultXml, vals.map(a => TheBindParam(a._1, a._2)) :_*)
-  def bind(vals: (String, NodeSeq)*): NodeSeq = bind(defaultPrefix, vals :_*)
+  def bind(prefix: String, vals: BindParam *): NodeSeq = bind(prefix, defaultXml, vals :_*)
+  def bind(vals: BindParam *): NodeSeq = bind(defaultPrefix, vals :_*)
   
   protected def ask(who: CometActor, what: Any)(answerWith: Any => Any) {
     who.start
@@ -287,7 +299,6 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
   }
   
   implicit def xmlToXmlOrJsCmd(in: NodeSeq): RenderOut = new RenderOut(Full(in), fixedRender, Empty, Empty, false)
-  // implicit def xmlNsToXmlOrJsCmd(in: Seq[Node]): RenderOut = new RenderOut(in)
   implicit def jsToXmlOrJsCmd(in: JsCmd): RenderOut = new RenderOut(Empty, Empty, Full(in), Empty, false)
   implicit def pairToPair(in: (String, Any)): (String, NodeSeq) = (in._1, Text(in._2 match {case null => "null" case s => s.toString}))
   implicit def nodeSeqToFull(in: NodeSeq): Can[NodeSeq] = Full(in)
@@ -350,7 +361,6 @@ spanFunc: (Long, NodeSeq) => NodeSeq, ignoreHtmlOnJs: Boolean, notices: List[(No
   
   def outSpan: NodeSeq = Script(Run("var destroy_"+id+" = function() {"+(destroy.openOr(JsCmds.Noop).toJsCmd)+"}")) ++
   fixedXhtml.openOr(Text(""))
-  //def asXhtml: NodeSeq = xml.openOr(Text(""))
 }
 
 case class PartialUpdateMsg(cmd: JsCmd) extends CometMessage

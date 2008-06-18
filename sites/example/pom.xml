@@ -4,7 +4,7 @@
   <parent>
     <groupId>net.liftweb</groupId>
     <artifactId>lift-examples-parent</artifactId>
-    <version>0.9-SNAPSHOT</version>
+    <version>0.10-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
 
@@ -21,7 +21,7 @@
     <dependency>
       <groupId>org.specs</groupId>
       <artifactId>specs</artifactId>
-      <version>1.2.6</version>
+      <version>1.2.9</version>
       <scope>test</scope>
     </dependency>
     <dependency>

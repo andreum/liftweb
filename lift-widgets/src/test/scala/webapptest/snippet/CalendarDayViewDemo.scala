@@ -113,7 +113,8 @@ class CalendarDayViewDemo {
     val item4 = CalendarItem("3453", c4, CalendarType.MEETING) optional (
         _ end (c4End),
         _ subject("Important meeting "),
-        _ description("We really need to meet")
+        _ description("We really need to meet"),
+        _ baseCSSClassName("greenItem")
         )
 
     val item5 = CalendarItem("asdff", c5, CalendarType.MEETING) optional (

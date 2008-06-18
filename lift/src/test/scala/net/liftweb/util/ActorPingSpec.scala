@@ -15,6 +15,7 @@
  */
 package net.liftweb.util
 
+import Helpers._
 import org.specs._
 import org.specs.util.WaitFor
 import org.specs.runner._
@@ -27,7 +28,7 @@ object ActorPingSpec extends Specification with PingedService with WaitFor {
   "The ActorPing object" should { doBefore { ActorPing.restart }
     "provide a schedule method to ping an actor regularly" in {
       service.start
-      ActorPing.schedule(service, Alive, 10)
+      ActorPing.schedule(service, Alive, TimeSpan(10))
       waitFor(100.ms)
       service.pinged must beTrue
     }

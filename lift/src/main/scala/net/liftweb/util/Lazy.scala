@@ -88,29 +88,19 @@ object ThreadLazy {
   * the pattern.  Thus, the LZ pattern match.
   */
 object LZ {
-  def apply[T](f: => T): LZ[T] = new LZ(() => f)
+  def apply[T](f: => T): LZ[T] = new LZ(f)
   def unapply[T](in: LZ[T]): Option[T] = Some(in.get)
   
  // implicit def lazyToT[T](in: LazyMatcher[T]): T = in.get
 }
 
 /**
+  * LZ encapsulates a lazy value.
   *
+  * @param f - a value to be evaluated lazily
   */
-class LZ[T](val f: () => T) {
-  private var hasTriggered = false
-  private var actual: T = _
-  
-  def get: T = if (hasTriggered) actual else {
-    synchronized {
-      if (hasTriggered) actual else {
-        actual = f()
-        hasTriggered = true
-        actual
-      }
-    }
-  }
-  
+class LZ[T](f: => T) {
+  lazy val get = f
   override def toString = "LZ("+get+")"
 }
 

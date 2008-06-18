@@ -1,0 +1,471 @@
+<html>
+<head>
+	<title>ZeroTurnaround JavaRebel Installation</title>
+<script type="text/javascript" language="javascript">
+         function updateDocSelection(obj) {
+            var divDest = document.getElementById("mainDoc");
+            var divSrc = document.getElementById(obj.value);
+            divDest.innerHTML = divSrc.innerHTML;
+         }
+</script>
+	
+</head>
+<body onLoad="updateDocSelection(document.getElementById('installSelection'))">
+
+<h2>Installation</h2>
+
+<p>On <b>Java 5 or later</b> just add the following to JVM command line (note that it is important that the JAR would be named "javarebel.jar")</p>
+<pre>-noverify -javaagent:/path/to/javarebel.jar</pre>
+
+<p>On <b>Java 1.4</b> first run the following:</p>
+<pre>java -jar /path/to/javarebel.jar</pre>
+<p>This will generate an <code>javarebel-bootstrap.jar</code> in the same directory as <code>javarebel.jar</code> and then add the following to JVM command line </p>
+<pre>-noverify -Xbootclasspath/p:/path/to/javarebel-bootstrap.jar;/path/to/javarebel.jar</pre>
+<p><em>NB!</em> The <code>javarebel-bootstrap.jar</code> is specific to the JVM version and JavaRebel version so be sure to regenerate every time the JVM or JavaRebel version changes! Also make sure that the JVM version you generate with is the same your application will run with! We suggest to add bootstrap generation command to the application/server startup script if possible.</p>
+
+<p>With any Java version if you use an IDE that compiles classes on-the-fly set <code>-Drebel.dirs</code> property to point to the output folder, for example:</p>
+<pre>-Drebel.dirs=/home/user/workspace/project/bin</pre> 
+
+<p>Start the server or application as usual. If JavaRebel integration was successful you should see a message like this:</p>
+
+<pre>##########################################################
+# ZeroTurnaround JavaRebel x.y.z                         #
+# ...                                                    #
+##########################################################</pre>
+<p>See <a href="http://www.zeroturnaround.com/javarebel/features">Features</a> for supported JVM and server versions.</p>
+
+<h3>Configuration</h3>
+
+<p>The following classes will be reloaded
+<ol>
+  <li>All ".class" classes inside the usual classpath (<code>WEB-INF/classes</code>, etc). Using this with <a href="http://www.zeroturnaround.com/blog/developing-in-exploded-format/">exploded deployment</a> will provide the best JavaRebel experience.</li>
+  <li>All ".class" classes in directories specified "-Drebel.dirs" comma-separated list JVM command line property. With this you can deploy in <a href="http://www.zeroturnaround.com/articles/zero-turnaround-in-unexploded-development/">unexploded development mode</a> (EAR or WAR) and still reload classes instantly. For example <code>-Drebel.dirs=/path/to/eclipse/project-one/bin,/path/to/eclipse/project-two/bin</code>. However new classes (or renamed old classes) will not be loaded before they also appear in the classpath (e.g. after the build in JAR files).</li>  
+</ol>
+</p>
+<p>If you are using IDEA you should install <a href="http://plugins.intellij.net/plugin/?id=1699">this plugin</a> to enable debugging with JavaRebel. You might also want to <a href="http://www.zeroturnaround.com/blog/configuring-ide-debugging-with-javarebel/">configure your IDE</a> for better debugging experience.</p>
+<p>If you have any problems with dynamic proxies (JDK, CgLib, Javassist) add "-Drebel.forbid_bypass=true" to the JVM command line to improve compatibility.</p>
+
+<h3>Platform-specific</h3>
+
+<p>Further you can find specific instructions for different operating systems, application servers and so on.</p>
+
+<b>Choose platform</b> <select onChange="updateDocSelection(this);" onFocus="updateDocSelection(this)" id="installSelection">
+   <optgroup label="Java 5+">
+      <option value="java5-standalone" selected>Standalone applications</option>
+      <option value="java5-weblogic">BEA Weblogic 9+</option>
+      <option value="java5-glassfishv2">GlassFish V2</option>
+      <option value="java5-jboss">JBoss 4+</option>
+      <option value="java5-jetty">Jetty 5+</option>
+      <option value="java5-maven">Maven/Jetty</option>
+      <option value="java5-oracle9">Oracle Application Server 9.x</option>
+      <option value="java5-oracle">Oracle Application Server 10.x</option>
+      <option value="java5-resin">Resin 3.0</option>
+      <option value="java5-tomcat">Tomcat 5+</option>
+      <option value="java5-other">Other</option>
+   </optgroup>
+   <optgroup label="Java 1.4">
+      <option value="java4-standalone">Standalone applications</option>
+      <option value="java4-weblogic">BEA Weblogic 7.x, 8.x+</option>
+      <option value="java4-jboss">JBoss 4+</option>
+      <option value="java4-jetty">Jetty 5+</option>
+      <option value="java4-maven">Maven/Jetty</option>
+      <option value="java4-oracle9">Oracle Application Server 9.x</option>
+      <option value="java4-oracle">Oracle Application Server 10.x</option>
+      <option value="java4-resin">Resin 3.0+</option>
+      <option value="java4-tomcat">Tomcat 4+</option>
+   </optgroup>   
+   <optgroup label="Java 1.4 (legacy)">
+      <option value="java4-legacy-standalone">Standalone applications</option>
+      <option value="java4-legacy-weblogic">BEA Weblogic 7.x, 8.x</option>
+      <option value="java4-legacy-oc4j9">Oracle Application Server 9.x</option>
+      <option value="java4-legacy-oc4j10">Oracle Application Server 10.x</option>
+      <option value="java4-legacy-tomcat">Tomcat 4</option>
+   </optgroup>
+</select>
+
+<div id="mainDoc">
+<h3><a title="java5-standalone" name="java5-standalone"></a>Standalone Applications</h3>
+<p>Just run as usual adding the integration string:</p>
+<pre>java -noverify -javaagent:javarebel.jar MAIN_CLASS ARGS</pre>
+<p>While developing IntelliJ IDEA or Eclipse plugins start the respected testing IDE instance
+with the integration string.</p>
+</div>
+
+<div style="visibility:hidden;display:none" id="java5-standalone">
+<h3><a title="java5-standalone" name="java5-standalone"></a>Standalone Applications</h3>
+<p>Just run as usual adding the integration string:</p>
+<pre>java -noverify -javaagent:javarebel.jar MAIN_CLASS ARGS</pre>
+<p>While developing IntelliJ IDEA or Eclipse plugins start the respected testing IDE instance
+with the integration string.</p>
+</div>
+<!-- ############################################################## -->
+<div style="visibility:hidden;display:none" id="java5-weblogic">
+<h3><a title="java5-weblogic" name="java5-weblogic"></a>BEA Weblogic 9.x, 10.x</h3>
+<h4>Windows</h4>
+
+<p>File: <code>%DOMAIN_HOME%\bin\startWeblogic.cmd</code>.<br />
+Add the following line:</p>
+<pre>set JAVA_OPTIONS=-noverify -javaagent:javarebel.jar %JAVA_OPTIONS%</pre>
+<h4>Linux</h4>
+<p>File: <code>$DOMAIN_HOME\bin\startWeblogic.sh</code>.<br />
+Add the following line:</p>
+<pre>JAVA_OPTIONS=-noverify -javaagent:javarebel.jar $JAVA_OPTIONS</pre>
+</div>
+<!-- ############################################################## -->
+<div style="visibility:hidden;display:none" id="java5-oracle">
+<h3><a title="java5-oracle" name="java5-oracle"></a>Oracle Application Server 10.x</h3>
+<h4>Windows</h4>
+<p>File: <code>%ORACLE10_HOME%\bin\oc4j.cmd</code></p>
+<p>Add the following line:</p>
+<pre>set JVMARGS=-noverify -javaagent:javarebel.jar %JVMARGS%</pre>
+<h4>Linux</h4>
+<p>File: <code>$ORACLE10_HOME/bin/oc4j</code></p>
+<p>Add the following line:</p>
+
+<pre>JVMARGS="-noverify -javaagent:javarebel.jar $JVMARGS"</pre>
+</div>
+<!-- ############################################################## -->
+<div style="visibility:hidden;display:none" id="java5-oracle9">
+<h3><a title="java5-oracle9" name="java5-oracle9"></a>Oracle Application Server 9.x (on Java 5)</h3>
+<h4>Windows</h4>
+<p>Go to folder <code>%ORACLE9_HOME%\j2ee\home</code> and start the server with the following command:</p>
+<pre>java -noverify -javaagent:javarebel.jar -jar oc4j.jar</pre>
+<h4>Linux</h4>
+<p>Go to folder <code>$ORACLE9_HOME/j2ee/home</code> and start the server with the following command:</p>
+
+<pre>java -noverify -javaagent:javarebel.jar -jar oc4j.jar</pre>
+</div>
+<!-- ############################################################## -->
+<div style="visibility:hidden;display:none" id="java5-jboss">
+<h3><a title="java5-jboss" name="java5-jboss"></a>JBoss</h3>
+<h4>Windows</h4>
+<p>File: <code>%JBOSS_HOME%\bin\run.bat</code></p>
+<p>Add the following line:</p>
+<pre>set JAVA_OPTS=-noverify -javaagent:javarebel.jar %JAVA_OPTS%</pre>
+<h4>Linux</h4>
+<p>File: <code>$JBOSS_HOME/bin/run.sh</code></p>
+
+<p>Add the following line:</p>
+<pre>JAVA_OPTS="-noverify -javaagent:javarebel.jar $JAVA_OPTS"</pre>
+</div>
+
+<!-- ############################################################## -->
+<div style="visibility:hidden;display:none" id="java5-glassfishv2">
+<h3><a title="java5-glassfishv2" name="java5-glassfish2"></a>GlassFish V2</h3>
+<h4>Windows & Linux</h4>
+<p>File: <code>%DOMAIN_HOME%\config\domain.xml</code></p>
+<p>Search for <code>jvm-options</code> element and add the elements
+<code>-noverify</code> and
+<code>-javaagent:javarebel.jar</code>
+Start the domain as usual.</p>
+</div>
+
+<!-- ############################################################## -->
+<div style="visibility:hidden;display:none" id="java5-maven">
+<h3><a title="java5-maven" name="java5-maven"></a>Maven/Jetty</h3>
+You can also use JavaRebel with Maven Jetty plugin.
+
+Edit your <code>pom.xml</code> file and set the <code>scanIntervalSeconds</code> param to 0, this will turn off Jetty's internal reloading. Jetty's internal reloading won't keep your session after reloading changed classes.
+
+Start jetty with the maven jetty plugin and the <code>MAVEN_OPTS</code> parameter set
+<pre>MAVEN_OPTS="-noverify -javaagent:javarebel.jar" mvn jetty:run</pre>
+Run <code>mvn compile</code> in another terminal and JavaRebel will reload your changed classes.
+</div> 
+
+<!-- ############################################################## -->
+<div style="visibility:hidden;display:none" id="java5-tomcat">
+<h3><a title="java5-tomcat" name="java5-tomcat"></a>Tomcat</h3>
+<h4>Windows</h4>
+<p>File: <code>%TOMCAT_HOME%\bin\catalina.cmd</code></p>
+<p>Add the following line:</p>
+<pre>set JAVA_OPTS=-noverify -javaagent:javarebel.jar %JAVA_OPTS%</pre>
+
+If you use the windows service or system tray startup use the following parameters instead:
+<pre>-Xverify:none -javaagent:javarebel.jar</pre>
+<h4>Linux</h4>
+
+<p>File: <code>$TOMCAT_HOME/bin/catalina.sh</code></p>
+<p>Add the following line:</p>
+<pre> JAVA_OPTS="-noverify -javaagent:javarebel.jar $JAVA_OPTS"</pre>
+</div>
+
+<!-- ############################################################## -->
+
+<div style="visibility:hidden;display:none" id="java5-jetty">
+<h3><a title="java5-jetty" name="java5-jetty"></a>Jetty 5, 6</h3>
+<p>Since Jetty does not have any startup scripts just add the following line to the command line:</p>
+<pre> -noverify -javaagent:javarebel.jar</pre>
+
+</div>
+
+<!-- ############################################################## -->
+
+<div style="visibility:hidden;display:none" id="java5-resin">
+<h3><a title="java5-resin" name="java5-resin"></a>Caucho Resin 3.0.x</h3>
+<p>Copy javarebel.jar to RESIN_HOME/ folder.</p>
+
+<h4>Windows</h4>
+<p>Start httpd.exe with parameters
+<pre>httpd.exe -J-javaagent:javarebel.jar -J-noverify</pre></p>
+
+<h4>Linux</h4>
+<p>
+Modify RESIN_HOME/bin/wrapper.pl $JAVA_ARGS variable to include the line:
+<pre>-javaagent:javarebel.jar -noverify</pre></p>
+</div>
+
+<!-- ############################################################## -->
+
+<div style="visibility:hidden;display:none" id="java5-other">
+<h3><a title="java5-other" name="java5-other"></a>Other</h3>
+
+<p>If JavaRebel doesn't work with your application or container it is most probably due to some custom classloaders that don't behave exactly as we expect them to. You need to determine the class name of the classloader in question. The easiest way to do it is put the following line in any class that will be loaded by that classloader (e.g. in a web application case it could be a servlet class):</p>
+<p><code>System.out.println(getClass().getClassLoader().getClass().getName());</code></p>
+<p>This will print the name of the classloader class right out to the console. Let's assume the name was "com.acme.CustomClassLoader". In that case all we need to do is pass it to the JavaRebel agent like this:</p>
+<p><code>-noverify -javaagent:javarebel.jar=com.acme.CustomClassLoader</code></p>
+<p>Sometimes there could be several different custom classloaders and in such a case a comma-separated syntax should be used:</p>
+<p><code>-noverify -javaagent:javarebel.jar=com.acme.CustomClassLoader1,com.acme.CustomClassLoader2,...</code></p>
+<p>This should get most of the custom classloaders to work.</p>
+
+</div>
+
+<!-- ############################################################## -->
+<!-- ############################################################## -->
+<!-- ########################### JAVA 4 ########################### -->
+<!-- ############################################################## -->
+<!-- ############################################################## -->
+
+<div style="visibility:hidden;display:none" id="java4-standalone">
+<h3><a title="java4-standalone" name="java4-standalone"></a>Standalone Applications</h3>
+<p>To generate the <code>javarebel-bootstrap.jar</code> just run <code>java -jar javarebel.jar</code> using the JVM you will run the application with.</p>
+<p>Just run as usual adding the integration string:</p>
+<pre>java -noverify -Xbootclasspath/p:javarebel-bootstrap.jar;javarebel.jar MAIN_CLASS ARGS</pre>
+<p>While developing IntelliJ IDEA or Eclipse plugins start the respected testing IDE instance
+with the integration string.</p>
+</div>
+<!-- ############################################################## -->
+<div style="visibility:hidden;display:none" id="java4-weblogic">
+<h3><a title="java4-weblogic" name="java4-weblogic"></a>BEA Weblogic 7.x, 8.x</h3>
+<p>To generate the <code>javarebel-bootstrap.jar</code> just run <code>java -jar javarebel.jar</code> using the JVM you will run the application with.</p>
+<h4>Windows</h4>
+<p>File: <code>%DOMAIN_HOME%\bin\startWeblogic.cmd</code>.<br />
+Add the following line:</p>
+<pre>set JAVA_OPTIONS=-noverify -Xbootclasspath/p:javarebel-bootstrap.jar;javarebel.jar %JAVA_OPTIONS%</pre>
+<h4>Linux</h4>
+<p>File: <code>$DOMAIN_HOME\bin\startWeblogic.sh</code>.<br />
+Add the following line:</p>
+<pre>JAVA_OPTIONS=-noverify -Xbootclasspath/p:javarebel-bootstrap.jar:javarebel.jar $JAVA_OPTIONS</pre>
+</div>
+<!-- ############################################################## -->
+<div style="visibility:hidden;display:none" id="java4-oracle">
+<h3><a title="java4-oracle" name="java4-oracle"></a>Oracle Application Server 10.x+</h3>
+<p>To generate the <code>javarebel-bootstrap.jar</code> just run <code>java -jar javarebel.jar</code> using the JVM you will run the application with.</p>
+<h4>Windows</h4>
+<p>File: <code>%ORACLE10_HOME%\bin\oc4j.cmd</code></p>
+<p>Add the following line:</p>
+<pre>set JVMARGS=-noverify -Xbootclasspath/p:javarebel-bootstrap.jar;javarebel.jar %JVMARGS%</pre>
+<h4>Linux</h4>
+<p>File: <code>$ORACLE10_HOME/bin/oc4j</code></p>
+<p>Add the following line:</p>
+
+<pre>JVMARGS="-noverify -Xbootclasspath/p:javarebel-bootstrap.jar:javarebel.jar $JVMARGS"</pre>
+</div>
+<!-- ############################################################## -->
+<div style="visibility:hidden;display:none" id="java4-oracle9">
+<h3><a title="java4-oracle9" name="java4-oracle9"></a>Oracle Application Server 9.x</h3>
+<p>To generate the <code>javarebel-bootstrap.jar</code> just run <code>java -jar javarebel.jar</code> using the JVM you will run the application with.</p>
+<h4>Windows</h4>
+<p>Go to folder <code>%ORACLE9_HOME%\j2ee\home</code> and start the server with the following command:</p>
+<pre>java -noverify -Xbootclasspath/p:javarebel-bootstrap.jar;javarebel.jar -jar oc4j.jar</pre>
+<h4>Linux</h4>
+<p>Go to folder <code>$ORACLE9_HOME/j2ee/home</code> and start the server with the following command:</p>
+
+<pre>java -noverify -Xbootclasspath/p:javarebel-bootstrap.jar:javarebel.jar -jar oc4j.jar</pre>
+</div>
+<!-- ############################################################## -->
+<div style="visibility:hidden;display:none" id="java4-jboss">
+<h3><a title="java4-jboss" name="java4-jboss"></a>JBoss</h3>
+<p>To generate the <code>javarebel-bootstrap.jar</code> just run <code>java -jar javarebel.jar</code> using the JVM you will run the application with.</p>
+<h4>Windows</h4>
+<p>File: <code>%JBOSS_HOME%\bin\run.bat</code></p>
+<p>Add the following line:</p>
+<pre>set JAVA_OPTS=-noverify -Xbootclasspath/p:javarebel-bootstrap.jar;javarebel.jar %JAVA_OPTS%</pre>
+<h4>Linux</h4>
+<p>File: <code>$JBOSS_HOME/bin/run.sh</code></p>
+
+<p>Add the following line:</p>
+<pre>JAVA_OPTS="-noverify -Xbootclasspath/p:javarebel-bootstrap.jar:javarebel.jar $JAVA_OPTS"</pre>
+</div>
+
+
+<!-- ############################################################## -->
+<div style="visibility:hidden;display:none" id="java4-maven">
+<h3><a title="java4-maven" name="java4-maven"></a>Maven/Jetty</h3>
+<p>To generate the <code>javarebel-bootstrap.jar</code> just run <code>java -jar javarebel.jar</code> using the JVM you will run the application with.</p>
+Edit your <code>pom.xml</code> file and set the <code>scanIntervalSeconds</code> param to 0, this will turn off Jetty's internal reloading. Jetty's internal reloading won't keep your session after reloading changed classes.
+
+Start jetty with the maven jetty plugin and the <code>MAVEN_OPTS</code> parameter set
+<pre>MAVEN_OPTS="-noverify -Xbootclasspath/p:javarebel-bootstrap.jar:javarebel.jar" mvn jetty:run</pre>
+Run <code>mvn compile</code> in another terminal and JavaRebel will reload your changed classes.
+</div> 
+
+<!-- ############################################################## -->
+<div style="visibility:hidden;display:none" id="java4-tomcat">
+<h3><a title="java4-tomcat" name="java4-tomcat"></a>Tomcat</h3>
+<p>To generate the <code>javarebel-bootstrap.jar</code> just run <code>java -jar javarebel.jar</code> using the JVM you will run the application with.</p>
+<h4>Windows</h4>
+<p>File: <code>%TOMCAT_HOME%\bin\catalina.cmd</code></p>
+<p>Add the following line:</p>
+<pre>set JAVA_OPTS=-noverify -Xbootclasspath/p:javarebel-bootstrap.jar;javarebel.jar %JAVA_OPTS%</pre>
+
+If you use the windows service or system tray startup use the following parameters instead:
+<pre>-Xverify:none -Xbootclasspath/p:javarebel-bootstrap.jar;javarebel.jar</pre>
+<h4>Linux</h4>
+
+<p>File: <code>$TOMCAT_HOME/bin/catalina.sh</code></p>
+<p>Add the following line:</p>
+<pre> JAVA_OPTS="-noverify -Xbootclasspath/p:javarebel-bootstrap.jar:javarebel.jar $JAVA_OPTS"</pre>
+</div>
+
+<!-- ############################################################## -->
+
+<div style="visibility:hidden;display:none" id="java4-jetty">
+<h3><a title="java4-jetty" name="java4-jetty"></a>Jetty 5, 6</h3>
+<p>To generate the <code>javarebel-bootstrap.jar</code> just run <code>java -jar javarebel.jar</code> using the JVM you will run the application with.</p>
+<p>Since Jetty does not have any startup scripts just add the following line to the command line:</p>
+<pre>-noverify -Xbootclasspath/p:javarebel-bootstrap.jar;javarebel.jar</pre>
+<p>On Linux it changes to:</p>
+<pre>-noverify -Xbootclasspath/p:javarebel-bootstrap.jar:javarebel.jar</pre>
+
+</div>
+
+<!-- ############################################################## -->
+
+<div style="visibility:hidden;display:none" id="java4-resin">
+<h3><a title="java4-resin" name="java4-resin"></a>Caucho Resin 3.0.x</h3>
+<p>Copy javarebel.jar to RESIN_HOME/ folder.</p>
+
+<h4>Windows</h4>
+<p>Start httpd.exe with parameters
+<pre>httpd.exe -J-noverify -J-Xbootclasspath/p:javarebel-bootstrap.jar;javarebel.jar</pre></p>
+
+<h4>Linux</h4>
+<p>
+Modify RESIN_HOME/bin/wrapper.pl $JAVA_ARGS variable to include the line:
+<pre>-noverify -Xbootclasspath/p:javarebel-bootstrap.jar:javarebel.jar</pre></p>
+</div>
+
+<!-- ############################################################## -->
+<!-- ############################################################## -->
+<!-- ########################### JAVA 4 ########################### -->
+<!-- ############################################################## -->
+<!-- ############################################################## -->
+
+<div style="visibility:hidden;display:none" id="java4-legacy-standalone">
+<h3><a title="java4-legacy-standalone" name="java4-legacy-standalone"></a>Standalone Applications</h3>
+<p><em>Java 1.4 legacy installation mode supports JavaRebel in reduced functionality mode only. For example added methods will not be visible via Reflection API. Please use new intallation mode where possible.</em></p>
+
+<p>Use the following command line:</p>
+<pre>java -noverify com.zeroturnaround.javarebel.RebelCLI MAIN_CLASS ARGS</pre>
+</div>
+
+<!-- ####################### JAVA 4 ################################# -->
+<div style="visibility:hidden;display:none" id="java4-legacy-weblogic">
+<h3><a title="java4-legacy-weblogic" name="java4-legacy-weblogic"></a>BEA WebLogic 8.x</h3>
+<p><em>Java 1.4 legacy installation mode supports JavaRebel in reduced functionality mode only. For example added methods will not be visible via Reflection API. Please use new intallation mode where possible.</em></p>
+<p>Download <code>javarebel-x.y.z.jar</code>. Put it in the domain directory (e.g. <code>user_projects/domains/mydomain</code>). Modify the <code>startWebLogic.cmd</code>. Prepend <code>javarebel-x.y.z.jar</code> to WebLogic classpath (you can rename it to <code>javarebel.jar</code> to make upgrading easier):</p>
+
+<pre>set CLASSPATH=javarebel-x.y.z.jar;%CLASSPATH%</pre>
+<p><em>Note that it is important for <code>javarebel-x.y.z.jar</code> to be the first entry in the classpath!</em></p>
+<p>Add -noverify to <code>JAVA_OPTIONS</code>:</p>
+<pre>set JAVA_OPTIONS=-noverify %JAVA_OPTIONS%</pre>
+<p>Add a following line before the server is called:</p>
+
+<pre>%JAVA_HOME%\bin\java com.zeroturnaround.javarebel.weblogic.Install</pre>
+<p>Start the server as usual.</p>
+<p><strong>NB! Due to a bug in JRockit JVM you will need version 8.1sp6 or later for JavaRebel to function successfully! This problem does not affect other JVMs (e.g. Sun JVM)</strong></p>
+
+</div>
+
+<!-- ####################### JAVA 4 ################################# -->
+<div style="visibility:hidden;display:none" id="java4-legacy-oc4j9">
+<h3><a title="java4-legacy-oc4j9" name="java4-legacy-oc4j9"></a>Oracle Container for Java EE 9.x</h3>
+<p><em>Java 1.4 legacy installation mode supports JavaRebel in reduced functionality mode only. For example added methods will not be visible via Reflection API. Please use new intallation mode where possible.</em></p>
+
+<h4>Windows & Linux</h4>
+<p>We assume that javarebel.jar is located under OC4J_HOME/j2ee/home and for starting
+OC4J without JavaRebel the standard <i>java -jar oc4j.jar</i>is used.</p>
+<ul>
+   <li>
+      Run <code>java -cp javarebel.jar com.zeroturnaround.javarebel.oc4j9.Install</code>
+   </li>
+   <li>Use <code>java -cp javarebel.jar:oc4j.jar com.evermind.server.OC4JServer</code> to start the container.</li>
+</ul>
+</div>
+<!-- ####################### JAVA 4 ################################# -->
+<div style="visibility:hidden;display:none" id="java4-legacy-oc4j10">
+<h3><a title="java4-legacy-oc4j10" name="java4-legacy-oc4j10"></a>Oracle Container for Java EE 10.x</h3>
+<p><em>Java 1.4 legacy installation mode supports JavaRebel in reduced functionality mode only. For example added methods will not be visible via Reflection API. Please use new intallation mode where possible.</em></p>
+
+<h4>Linux</h4>
+<p>We assume that javarebel.jar is located under OC4J_HOME/bin and for starting
+OC4J without JavaRebel the standard <i>oc4j -start</i> is used.</p>
+<p>
+Search for the line that starts the server:
+<pre>
+$JAVA_HOME/bin/java $JVMARGS -jar $OC4J_JAR $CMDARGS
+</pre>
+Replace this with
+<pre>
+$JAVA_HOME/bin/java -cp javarebel.jar com.zeroturnaround.javarebel.oc4j10.Install
+$JAVA_HOME/bin/java $JVMARGS -cp javarebel.jar:$OC4J_JAR oracle.oc4j.loader.boot.BootStrap $CMDARGS
+</pre>
+<p>This will start the container as usual but also includes the JavaRebel integration.
+</p>
+
+<h4>Windows</h4>
+<p>We assume that javarebel.jar is located under OC4J_HOME\bin and for starting
+OC4J without JavaRebel the standard <i>oc4j.cmd -start</i> is used.</p>
+<p>
+Search for the line that starts the server:
+<pre>
+"%JAVA_HOME%\bin\java" %JVMARGS% -jar "%OC4J_JAR%" %CMDARGS%
+</pre>
+Replace this with
+<pre>
+"%JAVA_HOME%\bin\java" -cp javarebel.jar com.zeroturnaround.javarebel.oc4j10.Install
+"%JAVA_HOME%\bin\java" %JVMARGS% -cp "javarebel.jar:%OC4J_JAR%" oracle.oc4j.loader.boot.BootStrap %CMDARGS%
+</pre>
+This will start the container as usual but also includes the JavaRebel integration.
+</p>
+
+</div>
+
+<!-- ####################### JAVA 4 ################################# -->
+<div style="visibility:hidden;display:none" id="java4-legacy-tomcat">
+<h3><a title="java4-legacy-tomcat" name="java4-legacy-tomcat"></a>Tomcat 4</h3>
+<p><em>Java 1.4 legacy installation mode supports JavaRebel in reduced functionality mode only. For example added methods will not be visible via Reflection API. Please use new intallation mode where possible.</em></p>
+
+<p>This configuration assumes that javarebel.jar is located under CATALINA_HOME/bin directory.</p>
+<h4>Windows</h4>
+<p>File: <code>%TOMCAT_HOME%\bin\catalina.cmd</code></p>
+
+<p>Add the following line just before "rem Execute Java with the applicable properties":</p>
+<pre>set JAVA_OPTS=-noverify %JAVA_OPTS%
+set CLASSPATH=javarebel.jar;%CLASSPATH%
+"%JAVA_HOME%\bin\java.exe" -cp "%CLASSPATH%;..\server\lib\catalina.jar" \
+com.zeroturnaround.javarebel.tomcat.Install</pre>
+<h4>Linux</h4>
+<p>File: <code>$TOMCAT_HOME/bin/catalina.sh</code></p>
+<p>Add the following line just after <i>elif [ $1? = "start" ] ; then</i>:</p>
+
+<pre>JAVA_OPTS="-noverify $JAVA_OPTS"
+CLASSPATH="javarebel.jar:$CLASSPATH"
+"$_RUNJAVA" $JAVA_OPTS -classpath "../server/lib/catalina.jar:$CLASSPATH" \
+com.zeroturnaround.javarebel.tomcat.Install
+</pre>
+</div>
+
+</div>
+</body>
+</html>

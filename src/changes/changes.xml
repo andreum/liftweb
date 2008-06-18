@@ -16,9 +16,13 @@
     </action>
     see http://maven.apache.org/plugins/maven-changes-plugin/usage.html for full guide
   -->
-    <release version="0.9" date="??" description="">
+    <release version="0.10" date="" description="">
+    </release>
+    <release version="0.9" date="2008-06-15" description="">
+      <action dev="Marius Danciu" type="add">Added URL rewriting support</action>
       <action dev="Marius Danciu" type="add">Added CalendarDayView widget</action>
       <action dev="Marius Danciu" type="add">Added CalendarWeekView widget</action>
+      <action dev="David Pollak" type="update">Switch from svn (code.google.com) to git (github) has scm to manage source</action>
     </release>
     <release version="0.8" date="2008-05-09" description="">
       <action dev="David Bernard" type="update">Use vscaladoc to generate API</action>

@@ -328,10 +328,10 @@ object S {
   def addAnalyzer(f: (Can[RequestState], Long, List[(String, Long)]) => Any): Unit = _queryAnalyzer = _queryAnalyzer ::: List(f)
   
   private var aroundRequest: List[LoanWrapper] = Nil
-  private def doAround[B](ar: List[LoanWrapper], f: => B): B = 
+  private def doAround[B](ar: List[LoanWrapper])(f: => B): B = 
   ar match {
     case Nil => f
-    case x :: xs => x(doAround(xs, f))
+    case x :: xs => x(doAround(xs)(f))
   }
   
   /**
@@ -361,7 +361,7 @@ object S {
   def setHeader(name: String, value: String) {
     Can.legacyNullTest(_responseHeaders.value).foreach(
     rh =>
-    rh.headers = rh.headers + name -> value
+    rh.headers = rh.headers + (name -> value)
     )
   }
   
@@ -394,8 +394,10 @@ object S {
               _stateSnip.doWith(new HashMap) {
                 initNotice {
                   _functionMap.doWith(new HashMap[String, AFuncHolder]) {
-                    wrapQuery {
-                      this.currCnt.doWith(0)(f)
+		            doAround(aroundRequest) {
+		              wrapQuery {
+			            this.currCnt.doWith(0)(f)
+		              }
                     }
                   }
                 }
@@ -416,7 +418,6 @@ object S {
   c <- ca) yield c
 
   private def _init[B](request: RequestState, session: LiftSession)(f: () => B): B = {
-    doAround(aroundRequest,
     this._request.doWith(request) {
       _sessionInfo.doWith(session) {
         _responseHeaders.doWith(new ResponseInfoHolder) {
@@ -428,7 +429,6 @@ object S {
         }
       }
     }
-    )
   }
   
   def referer: Can[String] = request.flatMap(r => Can.legacyNullTest(r.request.getHeader("Referer")))
@@ -461,18 +461,24 @@ object S {
         _init(request, session)(() => f)
     }
   }
-  
-  def get(what: String): Can[String] = servletSession.flatMap(_.getAttribute(what) match {case s: String => Full(s) case _ => Empty}) 
+
+  def get(what: String): Can[String] = session.flatMap(_.get(what))
+
+  def getSessionAttribute(what: String): Can[String] = servletSession.flatMap(_.getAttribute(what) match {case s: String => Full(s) case _ => Empty}) 
   
   
   def servletSession: Can[HttpSession] = session.map(_.httpSession).or(servletRequest.map(_.getSession))
     
   def invokedAs: String = _attrs.value.get("type") getOrElse ""
   
-  def set(name: String, value: String) = servletSession.foreach(_.setAttribute(name, value)) 
+  def setSessionAttribute(name: String, value: String) = servletSession.foreach(_.setAttribute(name, value)) 
+
+  def set(name: String, value: String) = session.foreach(_.set(name,value))
   
   
-  def unset(name: String) = servletSession.foreach(_.removeAttribute(name))
+  def unsetSessionAttribute(name: String) = servletSession.foreach(_.removeAttribute(name))
+
+  def unset(name: String) = session.foreach(_.unset(name))
   
   /**
   * The current servlet request
@@ -511,6 +517,11 @@ object S {
   
   
   private def booster(lst: List[String], func: String => Any): Unit = lst.foreach(v => func(v))
+  
+  def encodeURL(url: String) = {
+    URLRewriter.rewriteFunc map (f => f(url)) openOr url
+  }
+  
   
   /**
   * Build a handler for incoming JSON commands
@@ -552,7 +563,7 @@ object S {
     addFunctionMap(key, jsonCallback _)
 
     (JsonCall(key), JsCmds.Run(name.map(n => "/* JSON Func "+n+" $$ "+key+" */").openOr("") + 
-    "function "+key+"(obj) {jQuery.ajax( {url: '"+contextPath+"/"+LiftRules.ajaxPath+"', cache: false, timeout: 10000, type: 'POST', data: '"+
+    "function "+key+"(obj) {jQuery.ajax( {url: '"+encodeURL(contextPath+"/"+LiftRules.ajaxPath)+"', cache: false, timeout: 10000, type: 'POST', data: '"+
        key+"='+encodeURIComponent(JSON.stringify(obj)) , dataType: 'script'});}"))
   }
   
@@ -735,14 +746,15 @@ object S {
   abstract class JsonHandler {
     private val name = "_lift_json_"+getClass.getName
     private def handlers: (JsonCall, JsCmd) = 
-    S.servletSession.map(s => s.getAttribute(name) match {
-      case Full((x: JsonCall, y: JsCmd)) => { (x, y) }
-       case _ => { 
-        val ret: (JsonCall, JsCmd) = S.buildJsonFunc(this.apply)
-        s.setAttribute(name, Full(ret))
-        ret
+      S.session.map(s => s.get[Any](name) match {
+      case Full((x: JsonCall, y: JsCmd)) =>  (x, y) 
+      
+       case _ => 
+         val ret: (JsonCall, JsCmd) = S.buildJsonFunc(this.apply)
+         s.set(name, ret)
+         ret
       }
-    }).openOr( (JsonCall(""), JsCmds.Noop) )
+      ).openOr( (JsonCall(""), JsCmds.Noop) )
     
     def call: JsonCall = handlers._1
       
@@ -789,9 +801,9 @@ object S {
    * @param dflt - the default value of the session variable
    */
   abstract class SessionVar[T](dflt: => T) extends AnyVar[T, SessionVar[T]](dflt) {
-    override protected def findFunc(name: String): Can[T] = S.servletSession.flatMap(_.getAttribute(name) match {case Full(v: T) => Full(v) case _ => Empty})
-    override protected def setFunc(name: String, value: T): Unit = S.servletSession.foreach(_.setAttribute(name, Full(value)))
-    override protected def clearFunc(name: String): Unit = S.servletSession.foreach(_.removeAttribute(name))
+    override protected def findFunc(name: String): Can[T] = S.session.flatMap(_.get(name))
+    override protected def setFunc(name: String, value: T): Unit = S.session.foreach(_.set(name, value))
+    override protected def clearFunc(name: String): Unit = S.session.foreach(_.unset(name))
   }
     
   /**

@@ -1,0 +1,7 @@
+This still needs to be done - this file is here as a placeholder for when I get around to writing the bash scripts.
+
+Please don't remove it as install4j needs the lift-helpers dir to be there.
+
+Cheers,
+
+Tim

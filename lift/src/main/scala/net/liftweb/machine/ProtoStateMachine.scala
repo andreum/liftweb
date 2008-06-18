@@ -1,7 +1,7 @@
 package net.liftweb.machine;
 
 /*                                                *\
- (c) 2006-2007 WorldWide Conferencing, LLC
+ (c) 2006-2008 WorldWide Conferencing, LLC
  Distributed under an Apache License
  http://www.apache.org/licenses/LICENSE-2.0
  \*                                                 */
@@ -308,7 +308,7 @@ trait MetaProtoStateMachine [MyType <: ProtoStateMachine[MyType, StateType],
   
   private class TimedEventManager(val metaOwner: Meta) extends Actor {
     def act = {
-      ActorPing.schedule(this, Ping, timedEventInitialWait) // give the system 2 minutes to "warm up" then start pinging  
+      ActorPing.schedule(this, Ping, TimeSpan(timedEventInitialWait)) // give the system 2 minutes to "warm up" then start pinging  
       loop
     }
     
@@ -327,7 +327,7 @@ trait MetaProtoStateMachine [MyType <: ProtoStateMachine[MyType, StateType],
         } catch {
           case e => Log.error("State machine loop", e)
         }
-        ActorPing.schedule(this, Ping, timedEventPeriodicWait) 
+        ActorPing.schedule(this, Ping, TimeSpan(timedEventPeriodicWait)) 
         loop
         
         case _ => loop

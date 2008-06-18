@@ -314,6 +314,10 @@ abstract class EmptyCan[+A] extends Can[A] {
   override def ?~(msg: String) = Failure(msg, Empty, Nil)
 }
 
+object Failure {
+  def apply(msg: String) = new Failure(msg, Empty, Nil)
+}
+
 /**
 * A Failure is an Empty Can having a failure message explaining the reason for being empty
 * It can also optionally provide an exception or a chain of causes represented as a list of other Failure objects

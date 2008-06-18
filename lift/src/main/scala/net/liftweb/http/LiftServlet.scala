@@ -38,7 +38,7 @@ import javax.servlet._
 * ta-da, you've got a scala-powered Servlet
 *
 */
-private[http] class LiftServlet extends HttpServlet  {
+class LiftServlet extends HttpServlet {
   private var requestCnt = 0
   private var servletContext: ServletContext = null
 
@@ -75,20 +75,18 @@ private[http] class LiftServlet extends HttpServlet  {
       clearThread
     }
   }
-  
-  def getActor(request: RequestState, session: HttpSession): LiftSession = {
-    val ret = session.getAttribute(LiftRules.sessionNameConst) match {
-      case r: LiftSession =>
-      r.lastServiceTime = millis
-      r
+
+  def getLiftSession(request: RequestState, httpSession: HttpSession): LiftSession = {
+    val ret = SessionMaster.getSession(httpSession) match {
+      case Full(ret) => ret
+      
       case _ =>
-      val ret = LiftSession(session, request.contextPath)
-      
+      val ret = LiftSession(httpSession, request.contextPath)
       ret.lastServiceTime = millis
-      
-      session.setAttribute(LiftRules.sessionNameConst, ret)
+      SessionMaster.addSession(ret)
       ret
     }
+    
     ret.breakOutComet()
     ret
   }
@@ -128,6 +126,7 @@ private[http] class LiftServlet extends HttpServlet  {
   * Service the HTTP request
   */
   def doService(request: HttpServletRequest, response: HttpServletResponse, requestState: RequestState): Boolean = {
+    LiftRules.onBeginServicing.foreach(_(requestState))
     val statelessToMatch = RequestMatcher(requestState, Empty)
     
     val resp: Can[Response] = if (LiftRules.ending) {
@@ -140,12 +139,13 @@ private[http] class LiftServlet extends HttpServlet  {
         case f: Failure => Full(requestState.createNotFound(f).toResponse) 
       }
     } else {
-      val sessionActor = getActor(requestState, request.getSession)
+      val sessionActor = getLiftSession(requestState, request.getSession)
       val toMatch = RequestMatcher(requestState, Full(sessionActor))
       
       val dispatch: (Boolean, Can[Response]) = S.init(requestState, sessionActor.notices, sessionActor) {
         if (LiftRules.dispatchTable(request).isDefinedAt(toMatch)) {
-          try {
+	  LiftSession.onBeginServicing.foreach(_(sessionActor, requestState))
+          val ret = try {
             val f = LiftRules.dispatchTable(request)(toMatch)
             f(requestState) match {
               case Full(v) => (true, Full(LiftRules.convertResponse( (sessionActor.checkRedirect(v), Nil, S.responseCookies, requestState) )))
@@ -155,6 +155,10 @@ private[http] class LiftServlet extends HttpServlet  {
           } finally {
             sessionActor.notices = S.getNotices
           }
+	  LiftSession.onEndServicing.foreach(_(sessionActor, requestState, 
+					       ret._2))
+	  ret
+
         } else (false, Empty)
       }
       
@@ -164,7 +168,8 @@ private[http] class LiftServlet extends HttpServlet  {
       } else if (requestState.path.path.length == 1 && requestState.path.path.head == LiftRules.ajaxPath) {
         LiftRules.cometLogger.debug("AJAX Request: "+sessionActor.uniqueId+" "+requestState.params)
         S.init(requestState, sessionActor) {
-          try {
+	      LiftSession.onBeginServicing.foreach(_(sessionActor, requestState))
+          val ret = try {
             val what = flatten(sessionActor.runParams(requestState))
             
             val what2 = what.flatMap{case js: JsCmd => List(js); case n: NodeSeq => List(n) case js: JsCommands => List(js)  case r: ResponseIt => List(r); case s => Nil}
@@ -182,13 +187,15 @@ private[http] class LiftServlet extends HttpServlet  {
           } finally {
             sessionActor.updateFunctionMap(S.functionMap)
           }
+	      LiftSession.onEndServicing.foreach(_(sessionActor, requestState, ret))
+	      ret
         }
       } else {
         try {
           this.synchronized {
             this.requestCnt = this.requestCnt + 1
           }
-          
+
           sessionActor.processRequest(requestState).map(_.toResponse) // .what.toResponse
           
         } finally {
@@ -199,6 +206,8 @@ private[http] class LiftServlet extends HttpServlet  {
         }
       }
     }
+    
+    LiftRules.onEndServicing.foreach(_(requestState, resp))
     
     resp match {
       case Full(resp) =>
@@ -224,7 +233,7 @@ private[http] class LiftServlet extends HttpServlet  {
         
         case (theId: Long, ar: AnswerRender) => 
         answers = ar :: answers
-        ActorPing.schedule(this, BreakOut, 5L)
+        ActorPing.schedule(this, BreakOut, TimeSpan(5))
         
         case BreakOut => 
         actors.foreach{case (act, _) => act ! Unlisten}
@@ -251,7 +260,7 @@ private[http] class LiftServlet extends HttpServlet  {
     
     sessionActor.enterComet(cont)
     
-    ActorPing.schedule(cont, BreakOut, cometTimeout)
+    ActorPing.schedule(cont, BreakOut, TimeSpan(cometTimeout))
     
     LiftRules.doContinuation(requestState.request, cometTimeout + 2000L)
   }
@@ -344,7 +353,7 @@ private[http] class LiftServlet extends HttpServlet  {
   def sendResponse(resp: Response, response: HttpServletResponse, request: Can[RequestState]) {
     
     def fixHeaders(headers : List[(String, String)]) = headers map ((v) => v match {
-      case ("Location", uri) => (v._1, request map (_ updateWithContextPath(uri)) openOr uri)
+      case ("Location", uri) => (v._1, response.encodeURL(request map (_ updateWithContextPath(uri)) openOr uri))
       case _ => v
     })
     
@@ -370,7 +379,6 @@ private[http] class LiftServlet extends HttpServlet  {
   * Remove any thread-local associations
   */
   def clearThread: Unit = {
-    // uncomment for Scala 2.6.1 to avoid memory leak
     Actor.clearSelf
     DB.clearThread
   }
@@ -391,9 +399,13 @@ class LiftFilter extends Filter
       LiftRules.early.foreach(_(httpReq))
       
       val session = RequestState(httpReq, LiftRules.rewriteTable(httpReq), System.nanoTime)
-      
-      if (isLiftRequest_?(session) && actualServlet.service(httpReq, httpRes, session)) {}
-      else chain.doFilter(req, res)
+
+      URLRewriter.doWith(httpRes.encodeURL(_)) {
+        if (isLiftRequest_?(session) && actualServlet.service(httpReq, httpRes, session)) {
+        } else {
+          chain.doFilter(req, res)
+        }
+      }
       
       case _ => chain.doFilter(req, res)
     }

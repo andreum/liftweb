@@ -26,48 +26,44 @@ import scala.xml.Text
 import java.util.Date
 
 /**
- * A chat server.  It gets messages and returns them
- */
+* A chat server.  It gets messages and returns them
+*/
 
-class ChatServer extends Actor {
-  def act = loop(Nil, Nil)
-
-  /**
-    * Convert an incoming string into XHTML using Textile Markup
-    *
-    * @param msg the incoming string
-    *
-    * @return textile markup for the incoming string
-    */
-  def toHtml(msg: String): NodeSeq = TextileParser.parse(msg, Empty). // parse it
-      map(_.toHtml.toList match {case Nil => Nil case x :: xs => x.child}).  // convert to html and get the first child (to avoid things being wrapped in <p>)
-      getOrElse(Text(msg)) // if it wasn't parsable, then just return a Text node of the message
-
-  def loop(chat: List[ChatLine], sessions: List[Actor]) {
+object ChatServer extends Actor {
+  private var chats: List[ChatLine] = Nil
+  private var listeners: List[Actor] = Nil
+  
+  def act = loop {
     react {
-    case ChatServerMsg(user, msg) if msg.length > 0 =>
-      val chatu = (ChatLine(user, toHtml(msg), timeNow) :: chat).take(500)
-      val toDistribute = chatu.take(15)
-      sessions.foreach (_ ! ChatServerUpdate(toDistribute))
-      loop(chatu, sessions)
-
-    case ChatServerAdd(me) =>
-      me ! ChatServerUpdate(chat.take(15))
-      loop(chat, me :: sessions)
-
-    case ChatServerRemove(me) => loop(chat, sessions.remove(_ == me))
-
-    case _ => loop(chat, sessions)
+      case ChatServerMsg(user, msg) if msg.length > 0 =>
+      chats = ChatLine(user, toHtml(msg), timeNow) :: chats
+      val toDistribute = chats.take(15)
+      listeners.foreach (_ ! ChatServerUpdate(toDistribute))
+      
+      case ChatServerAdd(me) =>
+      me ! ChatServerUpdate(chats.take(15))
+      listeners = me :: listeners
+      
+      
+      case ChatServerRemove(me) =>
+      listeners = listeners.remove(_ == me)
+      
+      case _ =>
+    }
   }
-  }
-}
-
-object ChatServer {
-  val server = {
-    val ret = new ChatServer
-    ret.start
-    ret
-  }
+  
+  /**
+  * Convert an incoming string into XHTML using Textile Markup
+  *
+  * @param msg the incoming string
+  *
+  * @return textile markup for the incoming string
+  */
+  def toHtml(msg: String): NodeSeq = TextileParser.parse(msg, Empty). // parse it
+  map(_.toHtml.toList match {case Nil => Nil case x :: xs => x.child}).  // convert to html and get the first child (to avoid things being wrapped in <p>)
+  getOrElse(Text(msg)) // if it wasn't parsable, then just return a Text node of the message
+  
+  this.start
 }
 
 case class ChatLine(user: String, msg: NodeSeq, when: Date)

@@ -36,7 +36,7 @@ class Chat(initInfo: CometActorInitInfo) extends CometActor(initInfo) {
   private lazy val infoId = uniqueId + "_info"
 
   private val server = {
-    val ret = ChatServer.server
+    val ret = ChatServer
     ret ! ChatServerAdd(this)
     ret
   }

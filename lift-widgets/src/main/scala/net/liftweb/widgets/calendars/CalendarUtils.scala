@@ -60,6 +60,7 @@ object CalendarUtils {
         ("subject", Str(c.subject openOr "")) :: Nil
         
       items = c.description map(desc => items ++ (("description", Str(desc)) :: Nil) ) openOr items
+      items = c.baseCSSClassName map(name => items ++ (("cssClass", Str(name)) :: Nil) ) openOr items
       
       JsObj(items:_*)
      

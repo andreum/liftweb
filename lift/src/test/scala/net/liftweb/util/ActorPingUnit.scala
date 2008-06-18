@@ -26,7 +26,7 @@ object ActorPingUnitRunner extends ConsoleRunner(ActorPingUnit)
 object ActorPingUnit extends Specification with PingedService with WaitFor {
   def pingService = {
     service.start
-    ActorPing.schedule(service, Alive, 10)
+    ActorPing.schedule(service, Alive, TimeSpan(10))
     waitFor(100.ms)
     service.pinged must beTrue
   }

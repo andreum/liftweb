@@ -359,7 +359,7 @@ trait MappedField[FieldType <: Any,OwnerType <: Mapper[OwnerType]] extends BaseO
   def calcFieldName: String = fieldOwner.getSingleton._dbTableName+":"+name
   
  
-  final def toForm = {
+  final def toForm: Can[NodeSeq] = {
     def mf(in: Node): NodeSeq = in match {
       case g: Group => g.nodes.flatMap(mf)
       case e: Elem => e % toFormAppendedAttributes

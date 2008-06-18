@@ -28,7 +28,6 @@ import java.io.InputStream
 import java.io.ByteArrayOutputStream
 
 object LiftRules {
-  val sessionNameConst = "$lift$__theLiftSession__"
   val noticesContainerId = "lift__noticesContainer__"
   
   type DispatchPf = PartialFunction[RequestMatcher, RequestState => Can[ResponseIt]];
@@ -566,7 +565,8 @@ object LiftRules {
     browserResponseToException(Props.mode, r, e)
   }
   
-  
+  var onBeginServicing: List[RequestState => Unit] = Nil
+  var onEndServicing: List[(RequestState, Can[ResponseIt]) => Unit] = Nil
 }
 
 case object BreakOut

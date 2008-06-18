@@ -2,7 +2,7 @@
 <archetype>
   <id>liftweb-archetype-blank</id>
   <sources>
-    <source>src/main/scala/controller/.keep</source>
+    <source>src/main/scala/comet/.keep</source>
     <source>src/main/scala/model/.keep</source>
     <source>src/main/scala/snippet/.keep</source>
     <source>src/main/scala/snippet/HelloWorld.scala</source>

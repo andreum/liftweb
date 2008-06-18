@@ -127,3 +127,40 @@ table tr td {
 	font-weight:normal;
 	margin-top: 0px;
 }
+
+.greenItem {
+	background-color: rgb(0, 82, 0);
+	z-index: 10;
+	margin-top: 0px;
+	padding-top: 0px;
+	overflow: hidden;
+	vertical-align: top;
+	opacity: 0.7;
+	filter: alpha(opacity =     70);
+	cursor: pointer;
+}
+
+.greenItemHead {
+	margin-top: 0px;
+	padding-top: 0px;
+	font-family: arial;
+	font-size: 7pt;
+	color: #ffffff;
+	overflow: hidden;
+	vertical-align: top;
+}
+
+.greenItemBody {
+	background-color: rgb(0, 140, 0);
+	margin: 1px;
+	font-family: arial;
+	font-size: 8pt;
+	color: #ffffff;
+	overflow: hidden;
+	vertical-align: top;
+}
+
+
+
+
+

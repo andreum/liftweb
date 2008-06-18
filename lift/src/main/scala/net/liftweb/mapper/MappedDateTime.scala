@@ -90,11 +90,11 @@ class MappedDateTime[T<:Mapper[T]](val fieldOwner: T) extends MappedField[Date, 
   def fieldCreatorString(dbType: DriverType, colName: String): String = colName + " " + dbType.dateTimeColumnType
   
   def inFuture_? = data.get match {
-  case null => false
-  case d => d.getTime > millis
-}
+    case null => false
+    case d => d.getTime > millis
+  }
   def inPast_? = data.get match {
-  case null => false
-  case d => d.getTime < millis
-}
+    case null => false
+    case d => d.getTime < millis
+  }
 }
