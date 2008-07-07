@@ -324,6 +324,8 @@ object SHtml {
      
   private def checked(in: Boolean) = if (in) new UnprefixedAttribute("checked", "checked", Null) else Null 
   private def setId(in: Can[String]) = in match { case Full(id) => new UnprefixedAttribute("id", Text(id), Null); case _ => Null}
+  def disabled(in: Boolean) = if (in) new UnprefixedAttribute("disabled", "disabled", Null) else Null 
+  def readonly(in: Boolean) = if (in) new UnprefixedAttribute("readonly", "readonly", Null) else Null 
      
   def checkbox[T](possible: List[T], actual: List[T], func: List[T] => Any): ChoiceHolder[T] = {
     val len = possible.length
