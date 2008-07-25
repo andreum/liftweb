@@ -747,7 +747,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {self: A =>
       
   
   def formatFormLine(displayName: NodeSeq, form: NodeSeq): Node = (<xml:group><tr>
-  <td>{displayName}</td>
+  <td id="formLeft">{displayName}</td>
   <td>{form}</td>
   </tr></xml:group>)
   

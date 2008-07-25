@@ -25,13 +25,18 @@ trait ProtoUser[T <: ProtoUser[T]] extends KeyedMapper[Long, T] {
     object id extends MappedLongIndex(this)
   
   // First Name
-  object firstName extends MappedString(this, 32)
+  object firstName extends MappedString(this, 32) {
+    override def displayName = "First Name:"
+  }
   
   // Last Name
-  object lastName extends MappedString(this, 32)
+  object lastName extends MappedString(this, 32) {
+    override def displayName = "Last Name:"
+  }
   
   // Email
   object email extends MappedEmail(this, 48) {
+    override def displayName = "Email:"
     override def dbIndexed_? = true
     override def validations = valUnique(S.??("unique.email.address")) _ :: super.validations
   }
@@ -347,10 +352,10 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType], MyType <: ModelTy
     
   def loginXhtml = {
     (<form method="POST" action={S.uri}><table><tr><td
-     colspan="2">{S.??("log.in")}</td></tr>
+     colspan="2">Please Login</td></tr>
      <tr><td>{S.??("email.address")}</td><td><user:email /></td></tr>
      <tr><td>{S.??("password")}</td><td><user:password /></td></tr>
-     <tr><td><a href={"/"+BasePath+"/"+LostPassword}>{S.??("recover.password")}</a></td><td><user:submit /></td></tr></table>
+     <tr><td></td><td><user:submit /><br /> <a href={"/"+BasePath+"/"+LostPassword}>{S.??("recover.password")}</a></td></tr></table>
      </form>)
   }
     
@@ -372,7 +377,7 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType], MyType <: ModelTy
     bind("user", loginXhtml,
          "email" --> (FocusOnLoad(<input type="text" name="username"/>)),
          "password" --> (<input type="password" name="password"/>),
-         "submit" --> (<input type="submit" value={S.??("log.in")}/>))
+         "submit" --> (<input type="submit" value="Please Login"/>))
   }
     
   def lostPasswordXhtml = {
@@ -504,7 +509,7 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType], MyType <: ModelTy
     
   def editXhtml(user: ModelType) = {
     (<form method="POST" action={S.uri}>
-     <table><tr><td colspan="2">{S.??("edit")}</td></tr>
+     <table>
      {localForm(user, true)}
      <tr><td>&nbsp;</td><td><user:submit/></td></tr>
      </table>

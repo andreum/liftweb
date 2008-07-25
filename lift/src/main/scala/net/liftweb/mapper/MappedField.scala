@@ -130,6 +130,8 @@ trait BaseMappedField {
      * The display name of this field (e.g., "First Name")
      */
    def displayName: String  
+
+   def readOnly_? = false
    
    def asJsExp: JsExp
    
@@ -342,10 +344,8 @@ trait MappedField[FieldType <: Any,OwnerType <: Mapper[OwnerType]] extends BaseO
    * Create an input field for the item
    */
   override def _toForm: Can[NodeSeq] = 
-    Full(<input type='text' 
-	 name={S.mapFunc({s: List[String] => this.setFromAny(s)})} 
-	 value={is match {case null => "" case s => s.toString}}/>)
-  
+    Full(<input type='text' name={S.mapFunc({s: List[String] => this.setFromAny(s)})} value={is match {case null => "" case s => s.toString}}/> )
+
   /**
     * Set the field to the value
     */

@@ -161,9 +161,11 @@ Lift is a scala web framework.
     <module>lift-oauth</module>
     <module>lift-testkit</module>
     <module>lift-core</module>
+    <!--
     <module>sites</module>
     <module>lift-archetype-blank</module>
     <module>lift-archetype-basic</module>
+    -->
   </modules>
   <pluginRepositories>
     <pluginRepository>

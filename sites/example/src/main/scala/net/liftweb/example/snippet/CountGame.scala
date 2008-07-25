@@ -29,28 +29,22 @@ import net.liftweb.util._
 class CountGame extends StatefulSnippet {
   val dispatch: DispatchIt = {
     case "run" if lastGuess == number =>
-    xhtml => win(chooseTemplate("choose", "win", xhtml))
+      xhtml => win(chooseTemplate("choose", "win", xhtml))
     
     case "run" =>
-    xhtml => nextGuess(chooseTemplate("choose", "guess", xhtml))
+      xhtml => nextGuess(chooseTemplate("choose", "guess", xhtml))
     
     case "count_down" =>
-    xhtml => countDown(attr("from").map(Helpers.toInt).openOr(0))
+      xhtml => countDown(attr("from").map(Helpers.toInt).openOr(0))
   }
   
-  def win(xhtml: NodeSeq) = bind("count", xhtml, "number" --> number,
-  "count" --> count) ++ <p>Counting backward: {countDown(number)}</p>
+  def win(xhtml: NodeSeq) = bind("count", xhtml, "number" --> number, "count" --> count) ++ <p>Counting backward: {countDown(number)}</p>
   
   def countDown(number: Int): Node = if (number <= 0) Text("")
-  else <xml:group>{number} <lift:count_game.count_down from={(number - 1).toString} /></xml:group>
+    else <xml:group>{number} <lift:count_game.count_down from={(number - 1).toString} /></xml:group>
   
-  def nextGuess(xhtml: NodeSeq) =  bind("count", xhtml,
-  "input" --> text("", guess _),
-  "last" -->
-  lastGuess.map(v =>
-  if (v < number) v+" is low"
-  else v+" is high").
-  openOr("Make first Guess"))
+  def nextGuess(xhtml: NodeSeq) =  bind("count", xhtml, "input" --> text("", guess _), 
+    "last" --> lastGuess.map(v => if (v < number) v+" is low" else v+" is high").  openOr("Make first Guess"))
   
   private def guess(in: String) {
     count += 1
