@@ -13,7 +13,7 @@ import _root_.javax.servlet.http.Cookie
 /**
  * 200 response but without body.
  */
-case class OkResponse extends LiftResponse {
+case class OkResponse() extends LiftResponse {
   def toResponse = InMemoryResponse(Array(), Nil, Nil, 200)
 }
 
@@ -44,7 +44,7 @@ case class PermRedirectResponse(uri: String, request: Req, cookies: Cookie*) ext
  * Your Request was missing an important element. Use this as a last resort if
  * the request appears incorrect.
  */
-case class BadResponse extends LiftResponse {
+case class BadResponse() extends LiftResponse {
   def toResponse = InMemoryResponse(Array(), Nil, Nil, 400)
 }
 
@@ -55,12 +55,28 @@ case class UnauthorizedResponse(realm: String) extends LiftResponse {
   def toResponse = InMemoryResponse(Array(), List("WWW-Authenticate" -> ("Basic realm=\"" + realm + "\"")), Nil, 401)
 }
 
+object Qop extends Enumeration(0, "auth", "auth-int", "auth,auth-int") {
+  val AUTH, AUTH_INT, AUTH_AND_AUTH_INT = Value
+}
+
+/**
+ * 401 Unauthorized Response.
+ */
+case class UnauthorizedDigestResponse(override val realm: String, qop: Qop.Value, nonce: String, opaque: String) extends UnauthorizedResponse(realm) {
+  override def toResponse = InMemoryResponse(Array(), List("WWW-Authenticate" -> (
+    "Digest realm=\"" + realm + "\", " +
+    "qop=\"" + qop + "\", " +
+    "nonce=\"" + nonce + "\", " +
+    "opaque=\"" + opaque + "\""
+  )), Nil, 401)
+}
+
 /**
  * 404 Not Found
  * 
  * The requested Resource does not exist.
  */
-case class NotFoundResponse extends LiftResponse {
+case class NotFoundResponse() extends LiftResponse {
   def toResponse = InMemoryResponse(Array(), Nil, Nil, 404)
 }
 
@@ -70,7 +86,7 @@ case class NotFoundResponse extends LiftResponse {
  * This Resource does not allow this method. Use this when the resource can't
  * understand the method no matter the circumstances.
  */
-case class MethodNotAllowedResponse extends LiftResponse {
+case class MethodNotAllowedResponse() extends LiftResponse {
   def toResponse = InMemoryResponse(Array(), Nil, Nil, 405)
 }
 
@@ -79,6 +95,6 @@ case class MethodNotAllowedResponse extends LiftResponse {
  * 
  * The requested Resource used to exist but no longer does.
  */
-case class GoneResponse extends LiftResponse {
+case class GoneResponse() extends LiftResponse {
   def toResponse = InMemoryResponse(Array(), Nil, Nil, 410)
 }
