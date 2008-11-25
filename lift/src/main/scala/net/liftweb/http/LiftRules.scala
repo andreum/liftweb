@@ -25,6 +25,7 @@ import _root_.scala.xml._
 import _root_.scala.collection.mutable.{ListBuffer}
 import _root_.java.util.{Locale, TimeZone}
 import _root_.javax.servlet.http.{HttpServlet, HttpServletRequest , HttpServletResponse, HttpSession, Cookie}
+import auth._
 import _root_.javax.servlet.{ServletContext}
 import _root_.java.io.{InputStream, ByteArrayOutputStream, BufferedReader, StringReader}
 import js._
@@ -42,6 +43,7 @@ object LiftRules {
   type URLDecorator = PartialFunction[String, String]
   type SnippetDispatchPf = PartialFunction[String, DispatchSnippet]
   type ViewDispatchPf = PartialFunction[List[String], LiftView]
+  type ProtectedResourcePf = PartialFunction[ParsePath, Boolean]
 
   /**
    * A partial function that allows the application to define requests that should be
@@ -56,6 +58,10 @@ object LiftRules {
     _beforeSend = _beforeSend ::: List(f)
   }
 
+  var protectedResource: ProtectedResourcePf = Map.empty
+  
+  var authentication : HttpAuthentication = NoAuthentication
+  
   /**
    * A function that takes the HTTPSession and the contextPath as parameters
    * and returns a LiftSession reference. This can be used in cases subclassing
@@ -556,6 +562,11 @@ object LiftRules {
   def addDispatchAfter(pf: DispatchPf) = {
     dispatchTable_i = dispatchTable_i orElse pf
     dispatchTable_i
+  }
+  
+  def addProtectedResource(pr: ProtectedResourcePf) = {
+    protectedResource = protectedResource orElse pr
+    protectedResource
   }
 
   /**

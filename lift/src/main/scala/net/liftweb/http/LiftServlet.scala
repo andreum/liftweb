@@ -132,19 +132,25 @@ class LiftServlet extends HttpServlet {
     case x :: xs => flatten(xs)
   }
 
+  private def needsAuthentication_?(req : Req) = LiftRules.protectedResource.isDefinedAt(req.path) && 
+    LiftRules.protectedResource(req.path)
+  
   /**
    * Service the HTTP request
    */
   def doService(request: HttpServletRequest, response: HttpServletResponse, requestState: Req): Boolean = {
     LiftRules.onBeginServicing.foreach(_(requestState))
+    
     val statelessToMatch = requestState
 
-
+    lazy val auth = LiftRules.authentication.verified_?(requestState)
+    
     val resp: Can[LiftResponse] =
     // if the servlet is shutting down, return a 404
     if (LiftRules.ending) {
       LiftRules.notFoundOrIgnore(requestState, Empty)
-
+    } else if (needsAuthentication_?(requestState) && !auth.isEmpty) {
+      auth
     } else
     // if the request is matched is defined in the stateless table, dispatch
     // it
