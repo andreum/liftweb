@@ -136,16 +136,6 @@ case object UnknownScheme extends AuthenticationScheme {
   def code: String = "Unknown"
 }
 
-sealed abstract class QualityOfProtection {
-  def code: String
-}
-case object AuthenticationOnly extends QualityOfProtection {
-  def code: String = "auth"
-}
-case object AuthenticationWithIntegrity extends QualityOfProtection {
-  def code: String = "auth-int"
-}
-
 sealed abstract class AuthenticationAlgorithm {
   def code: String
 }
