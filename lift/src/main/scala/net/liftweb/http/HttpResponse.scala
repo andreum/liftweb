@@ -19,7 +19,7 @@ case class OkResponse() extends LiftResponse {
 
 /**
  * 201 Created Response
- * 
+ *
  * The Resource was created. We then return the resource, post-processing, to
  * the client. Usually used with HTTP PUT.
  */
@@ -40,7 +40,7 @@ case class PermRedirectResponse(uri: String, request: Req, cookies: Cookie*) ext
 
 /**
  * 400 Bad Request
- * 
+ *
  * Your Request was missing an important element. Use this as a last resort if
  * the request appears incorrect.
  */
@@ -73,7 +73,7 @@ case class UnauthorizedDigestResponse(override val realm: String, qop: Qop.Value
 
 /**
  * 404 Not Found
- * 
+ *
  * The requested Resource does not exist.
  */
 case class NotFoundResponse() extends LiftResponse {
@@ -82,7 +82,7 @@ case class NotFoundResponse() extends LiftResponse {
 
 /**
  * 405 Method Not Allowed
- * 
+ *
  * This Resource does not allow this method. Use this when the resource can't
  * understand the method no matter the circumstances.
  */
@@ -92,7 +92,7 @@ case class MethodNotAllowedResponse() extends LiftResponse {
 
 /**
  * 410 Resource Gone
- * 
+ *
  * The requested Resource used to exist but no longer does.
  */
 case class GoneResponse() extends LiftResponse {

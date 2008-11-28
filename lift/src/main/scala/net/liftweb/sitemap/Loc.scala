@@ -19,6 +19,7 @@ package net.liftweb.sitemap
 import _root_.net.liftweb.http._
 import _root_.net.liftweb.util._
 import Helpers._
+import auth._
 
 import _root_.scala.xml.{NodeSeq, Text}
 
@@ -251,6 +252,8 @@ object Loc {
     val defaultParams: Can[NullLocParams] = Full(NullLocParams)
 
     val params: List[LocParam] = theParams.toList
+
+    checkProtected(link, params)
   }
 
   def apply(theName: String, theLink: Loc.Link[NullLocParams],
@@ -264,16 +267,20 @@ object Loc {
     val text: Loc.LinkText[NullLocParams] = theText
 
     val params: List[LocParam]  = theParams.toList
+
+    checkProtected(link, params)
   }
 
-  /**
-   * Unapply to do pattern matching against a Loc.
-   * (name, link_uri, link_text)
-   */
-  /*
-   def unapplySeq(loc: Loc) : Option[(String, String, String)] =
-   Some((loc.name, loc.link.uri, loc.text.text()))
-   */
+  def checkProtected(link: Link[_], params: List[LocParam]) {
+    params.map(lp => {
+      lp match {
+        case Loc.Protected(role) => LiftRules.addProtectedResource(new LiftRules.ProtectedResourcePf() {
+          def isDefinedAt(in: ParsePath) = in.partPath == link.uriList
+          def apply(in: ParsePath): Can[Role] = Full(role())
+        })
+       case _ => lp
+      }})
+  }
 
   trait LocParam
   /**
@@ -287,6 +294,13 @@ object Loc {
    * will still be accessable.
    */
   case object Hidden extends LocParam
+
+  /**
+   * Indicates that the path denominated by Loc requires HTTP authentication
+   * and only a user assigned to this role or to a role that is child-of this role
+   * can access it.
+   */
+  case class Protected(role: () => Role) extends LocParam
 
   /**
    * If the Loc is in a group (or groups) like "legal" "community" etc.
@@ -367,7 +381,7 @@ object Loc {
    * (for example, help pages)
    * @param create -- create a URL based on incoming parameters
    */
-  class Link[T](uriList: List[String], val matchHead_? : Boolean) extends
+  class Link[T](val uriList: List[String], val matchHead_? : Boolean) extends
   PartialFunction[Req, Can[Boolean]] {
     def this(b: List[String]) = this(b, false)
 

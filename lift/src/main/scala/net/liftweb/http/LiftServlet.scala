@@ -29,6 +29,7 @@ import _root_.net.liftweb.util.Helpers
 import _root_.net.liftweb.util.ActorPing
 import _root_.java.util.{Locale, ResourceBundle}
 import _root_.java.net.URL
+import auth._
 import js._
 import _root_.javax.servlet._
 
@@ -132,25 +133,32 @@ class LiftServlet extends HttpServlet {
     case x :: xs => flatten(xs)
   }
 
-  private def needsAuthentication_?(req : Req) = LiftRules.protectedResource.isDefinedAt(req.path) && 
-    LiftRules.protectedResource(req.path)
-  
+  private def authPassed_?(req : Req) : Boolean = LiftRules.protectedResource.isDefinedAt(req.path) match {
+    case true => val role = LiftRules.protectedResource(req.path)
+      LiftRules.authentication.verified_?(req) match {
+        case Full(r) =>
+          // Check roles only ifthe resource is protected by Role.
+          role.map(resRole => r.isChildOf(resRole)) openOr true
+        case _ => false
+      }
+    case _ => true
+  }
+
+
   /**
    * Service the HTTP request
    */
   def doService(request: HttpServletRequest, response: HttpServletResponse, requestState: Req): Boolean = {
     LiftRules.onBeginServicing.foreach(_(requestState))
-    
+
     val statelessToMatch = requestState
 
-    lazy val auth = LiftRules.authentication.verified_?(requestState)
-    
     val resp: Can[LiftResponse] =
     // if the servlet is shutting down, return a 404
     if (LiftRules.ending) {
       LiftRules.notFoundOrIgnore(requestState, Empty)
-    } else if (needsAuthentication_?(requestState) && !auth.isEmpty) {
-      auth
+    } else if (!authPassed_?(requestState)) {
+      Full(LiftRules.authentication.unauthorizedResponse)
     } else
     // if the request is matched is defined in the stateless table, dispatch
     // it

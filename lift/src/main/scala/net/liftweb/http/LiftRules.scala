@@ -43,7 +43,7 @@ object LiftRules {
   type URLDecorator = PartialFunction[String, String]
   type SnippetDispatchPf = PartialFunction[String, DispatchSnippet]
   type ViewDispatchPf = PartialFunction[List[String], LiftView]
-  type ProtectedResourcePf = PartialFunction[ParsePath, Boolean]
+  type ProtectedResourcePf = PartialFunction[ParsePath, Can[Role]]
 
   /**
    * A partial function that allows the application to define requests that should be
@@ -58,10 +58,22 @@ object LiftRules {
     _beforeSend = _beforeSend ::: List(f)
   }
 
+  /**
+   * Defines the resources that are protected by authentication and authorization. If this function
+   * is notdefined for the input data, the resource is considered unprotected ergo no authentication
+   * is performed. If this function is defined and returns a Full can, it means that this resource
+   * is protected by authentication,and authenticated subjed must be assigned to the role returned by
+   * this function or to a role that is child-of this role. If this function returns Empty it means that
+   * this resource is protected by authentication but no authorization is performed meaning that roles are
+   * not verified.
+   */
   var protectedResource: ProtectedResourcePf = Map.empty
-  
+
+  /**
+   * The HTTP authentication mechanism that ift will perform. See <i>LiftRules.protectedResource</i>
+   */
   var authentication : HttpAuthentication = NoAuthentication
-  
+
   /**
    * A function that takes the HTTPSession and the contextPath as parameters
    * and returns a LiftSession reference. This can be used in cases subclassing
@@ -563,7 +575,7 @@ object LiftRules {
     dispatchTable_i = dispatchTable_i orElse pf
     dispatchTable_i
   }
-  
+
   def addProtectedResource(pr: ProtectedResourcePf) = {
     protectedResource = protectedResource orElse pr
     protectedResource

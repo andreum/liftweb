@@ -13,15 +13,15 @@ import org.apache.commons.codec.binary._
  *
  */
 trait HttpAuthentication {
-  
+
   def header(r: Req) = Can !! r.request.getHeader("Authorization")
-  
-  def verified_? : PartialFunction[Req, Can[UnauthorizedResponse]]
- 
-  def scheme : AuthenticationScheme = UnknownScheme
-  
+
+  def verified_? : PartialFunction[Req, Can[Role]]
+
   def realm : String = ""
-  
+
+  def unauthorizedResponse: UnauthorizedResponse = UnauthorizedResponse(realm)
+
 }
 
 object NoAuthentication extends HttpAuthentication {
@@ -33,42 +33,36 @@ object NoAuthentication extends HttpAuthentication {
  * The methods from the parent trait are implemented to decode the
  * Base64 encoded input from the http client.
  */
-case class HttpBasicAuthentication(realmName: String)(func: PartialFunction[(String, String, Req), Boolean]) extends HttpAuthentication {
-  
+case class HttpBasicAuthentication(realmName: String)(func: PartialFunction[(String, String, Req), Can[Role]]) extends HttpAuthentication {
+
   def credentials(r: Req): Can[(String, String)] = {
     header(r).flatMap(auth => {
       val decoded = new String(Base64.decodeBase64(auth.substring(6,auth.length).getBytes)).split(":").toList
       decoded match {
         case userName :: password :: _ => Full((userName, password))
         case userName :: Nil => Full((userName, ""))
-        case _ => Empty 
+        case _ => Empty
       }
     }
   )}
-  
-  override def scheme = BasicScheme
-  
+
   override def realm = realmName
-  
+
   def verified_? = {case (req) => {
-    var cred = credentials(req)
-    val ret = cred.map(t => 
-      if (func.isDefinedAt(t._1, t._2, req))
-        func(t._1, t._2, req)
+    credentials(req) match {
+      case Full((user, pwd)) => if (func.isDefinedAt(user, pwd, req))
+        func(user, pwd, req)
       else
-        false
-    ) openOr false
-    
-    ret match {
-      case false => Full(UnauthorizedResponse(realm))
+        Empty
       case _ => Empty
     }
-  }}
-  
+   }
+  }
+
 }
 
-case class HttpDigestAuthentication(realmName: String)(func: PartialFunction[(String, Req, (String) => Boolean), Boolean]) extends HttpAuthentication { 
-  
+case class HttpDigestAuthentication(realmName: String)(func: PartialFunction[(String, Req, (String) => Boolean), Can[Role]]) extends HttpAuthentication {
+
   def getInfo(req: Req) : Can[DigestAuthentication] = header(req).map(auth => {
 	 val info = auth.substring(7,auth.length)
      val pairs = splitNameValuePairs(info)
@@ -78,31 +72,27 @@ case class HttpDigestAuthentication(realmName: String)(func: PartialFunction[(St
     }
   )
 
-  override def scheme = DigestScheme
-  
+
   override def realm = realmName
 
+  override def unauthorizedResponse = UnauthorizedDigestResponse(realm, Qop.AUTH, randomString(64), randomString(64))
+
   def verified_? = {case (req) => {
-    var info = getInfo(req)
-    val ret = info.map(t => 
-      if (func.isDefinedAt((t.userName, req, validate(t) _)))
-        func((t.userName, req, validate(t) _))
+    getInfo(req) match {
+      case Full(auth) => if (func.isDefinedAt((auth.userName, req, validate(auth) _)))
+        func((auth.userName, req, validate(auth) _))
       else
-        false
-    ) openOr false
-    
-   ret match {
-      case false => Full(UnauthorizedDigestResponse(realm, Qop.AUTH, randomString(64), randomString(64)))
+        Empty
       case _ => Empty
     }
-    
+
   }}
 
   private def validate(clientAuth: DigestAuthentication)(password: String): Boolean = {
     val ha1 = hexEncode(md5((clientAuth.userName + ":" + clientAuth.realm + ":" + password).getBytes("UTF-8")))
     val ha2 = hexEncode(md5((clientAuth.method + ":" + clientAuth.uri).getBytes("UTF-8")))
-    
-    val response = hexEncode(md5((ha1 + ":" + clientAuth.nonce + ":" + 
+
+    val response = hexEncode(md5((ha1 + ":" + clientAuth.nonce + ":" +
                          clientAuth.nc + ":" + clientAuth.cnonce + ":" +
                          clientAuth.qop + ":" + ha2).getBytes("UTF-8")));
 
