@@ -274,10 +274,11 @@ object Loc {
   def checkProtected(link: Link[_], params: List[LocParam]) {
     params.map(lp => {
       lp match {
-        case Loc.Protected(role) => LiftRules.addProtectedResource(new LiftRules.ProtectedResourcePf() {
-          def isDefinedAt(in: ParsePath) = in.partPath == link.uriList
-          def apply(in: ParsePath): Can[Role] = Full(role())
-        })
+        case Loc.HttpAuthProtected(role) => LiftRules.addHttpAuthProtectedResource(
+          new LiftRules.HttpAuthProtectedResourcePf() {
+			def isDefinedAt(in: ParsePath) = in.partPath == link.uriList
+			def apply(in: ParsePath): Can[Role] = Full(role())
+          })
        case _ => lp
       }})
   }
@@ -300,7 +301,7 @@ object Loc {
    * and only a user assigned to this role or to a role that is child-of this role
    * can access it.
    */
-  case class Protected(role: () => Role) extends LocParam
+  case class HttpAuthProtected(role: () => Role) extends LocParam
 
   /**
    * If the Loc is in a group (or groups) like "legal" "community" etc.

@@ -133,8 +133,8 @@ class LiftServlet extends HttpServlet {
     case x :: xs => flatten(xs)
   }
 
-  private def authPassed_?(req : Req) : Boolean = LiftRules.protectedResource.isDefinedAt(req.path) match {
-    case true => val role = LiftRules.protectedResource(req.path)
+  private def authPassed_?(req : Req) : Boolean = LiftRules.httpAuthProtectedResource.isDefinedAt(req.path) match {
+    case true => val role = LiftRules.httpAuthProtectedResource(req.path)
       LiftRules.authentication.verified_?(req) match {
         case Full(r) =>
           // Check roles only ifthe resource is protected by Role.

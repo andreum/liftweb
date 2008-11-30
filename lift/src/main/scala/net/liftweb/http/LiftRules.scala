@@ -43,7 +43,7 @@ object LiftRules {
   type URLDecorator = PartialFunction[String, String]
   type SnippetDispatchPf = PartialFunction[String, DispatchSnippet]
   type ViewDispatchPf = PartialFunction[List[String], LiftView]
-  type ProtectedResourcePf = PartialFunction[ParsePath, Can[Role]]
+  type HttpAuthProtectedResourcePf = PartialFunction[ParsePath, Can[Role]]
 
   /**
    * A partial function that allows the application to define requests that should be
@@ -67,7 +67,7 @@ object LiftRules {
    * this resource is protected by authentication but no authorization is performed meaning that roles are
    * not verified.
    */
-  var protectedResource: ProtectedResourcePf = Map.empty
+  var httpAuthProtectedResource: HttpAuthProtectedResourcePf = Map.empty
 
   /**
    * The HTTP authentication mechanism that ift will perform. See <i>LiftRules.protectedResource</i>
@@ -576,9 +576,9 @@ object LiftRules {
     dispatchTable_i
   }
 
-  def addProtectedResource(pr: ProtectedResourcePf) = {
-    protectedResource = protectedResource orElse pr
-    protectedResource
+  def addHttpAuthProtectedResource(pr: HttpAuthProtectedResourcePf) = {
+    httpAuthProtectedResource = httpAuthProtectedResource orElse pr
+    httpAuthProtectedResource
   }
 
   /**
