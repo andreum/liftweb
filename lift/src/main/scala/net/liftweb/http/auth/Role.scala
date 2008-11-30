@@ -9,9 +9,8 @@ import net.liftweb.util.{Can, Full, Empty}
  */
 case class Role(name: String) {
 
+  private var parent: Can[Role] = Empty
   private var childs: List[Role] = Nil
-
-  override def toString = name
 
   /**
    * Add child Role(s) to this role. Node name is ensured to be unique (by name)
@@ -20,7 +19,9 @@ case class Role(name: String) {
   def addRoles(roles: Role*) = {
     for (val role <- roles) {
       getRoleByName(role.name) match {
-        case Empty => childs = role :: childs
+        case Empty =>
+          childs = role :: childs
+          role.parent = Full(this)
         case _ =>
       }
     }
@@ -39,11 +40,37 @@ case class Role(name: String) {
       })
       Empty
     case _ => Full(this)
+  }
+
+  /**
+   * Removes the child Role
+   */
+  def removeRoleByName(roleName : String) : Can[Role] = {
+    getRoleByName(roleName).map(_.detach) openOr Empty
+  }
+
+  /**
+   * Removes this Role from its parent
+   */
+  def detach : Can[Role] = {
+    this.parent.map {
+      case p =>
+        p.childs = p.childs.filter(role => role.name != this.name)
+        this.parent = Empty
+        this
     }
+  }
 
   /**
    * Verifies if this Roe is a child of provided role
    */
   def isChildOf(role: Role) : Boolean = !role.getRoleByName(name).isEmpty
 
+  override def toString = {
+    var str = "Role(" + name;
+    for (val role <- childs) {
+      str = str + ", " + role.toString
+    }
+    str + ")"
+  }
 }
