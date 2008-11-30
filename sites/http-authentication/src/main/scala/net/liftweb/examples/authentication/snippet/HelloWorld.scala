@@ -1,4 +1,4 @@
-package net.liftweb.examples.authentication
+package net.liftweb.examples.authentication.snippet
 
 import _root_.java.util._
 

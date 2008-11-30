@@ -16,9 +16,18 @@ class Boot {
   def boot {
     LiftRules.addToPackages("net.liftweb.examples.authentication")
     
-    LiftRules.httpAuthProtectedResource = {
-      case (ParsePath("secure" :: _, _, _, _)) => Full(Role("user"))
-    }
+    val entries =
+    Menu(Loc("Home", "index" :: Nil, "Home")) ::
+    Menu(Loc("Secured", "secure" :: Nil, "Secured", Loc.HttpAuthProtected(() => Role("user")))) ::
+    Nil
+
+    LiftRules.setSiteMap(SiteMap(entries: _*));
+
+
+
+    // LiftRules.httpAuthProtectedResource = {
+    //  case (ParsePath("secure" :: _, _, _, _)) => Full(Role("user"))
+    //}
     
     /**
      * This is the security function.
@@ -30,8 +39,10 @@ class Boot {
        * To verify, and see the resource, un: tim, pw: badger
        */
       case ("tim", req, func) => if (func("badger")) {
+        println("AUTH OK")
         Full(Role("user"))
       } else {
+	println("AUTH FAILED")
         Empty
       }
     }
