@@ -16,8 +16,8 @@ class Boot {
   def boot {
     LiftRules.addToPackages("net.liftweb.examples.authentication")
     
-    LiftRules.protectedResource = {
-      case (ParsePath("secure" :: _, _, _, _)) => true
+    LiftRules.httpAuthProtectedResource = {
+      case (ParsePath("secure" :: _, _, _, _)) => Full(Role("user"))
     }
     
     /**
@@ -29,14 +29,18 @@ class Boot {
       /**
        * To verify, and see the resource, un: tim, pw: badger
        */
-      case ("tim", req, func) => func("badger")
+      case ("tim", req, func) => if (func("badger")) {
+        Full(Role("user"))
+      } else {
+        Empty
+      }
     }
     
     /**
     // if you want to use Basic authentication scheme then use this instead:
     
      LiftRules.authentication = HttpBasicAuthentication("lift") {
-       case ("marius", "12test34", req) => println("marius is authenticated !"); true
+       case ("marius", "12test34", req) => println("marius is authenticated !"); Full(Role("user"))
      }
     */
     
