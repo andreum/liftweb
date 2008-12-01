@@ -50,10 +50,8 @@ case class HttpBasicAuthentication(realmName: String)(func: PartialFunction[(Str
 
   def verified_? = {case (req) => {
     credentials(req) match {
-      case Full((user, pwd)) => if (func.isDefinedAt(user, pwd, req))
+      case Full((user, pwd)) if (func.isDefinedAt(user, pwd, req)) =>
         func(user, pwd, req)
-      else
-        Empty
       case _ => Empty
     }
    }
@@ -79,10 +77,8 @@ case class HttpDigestAuthentication(realmName: String)(func: PartialFunction[(St
 
   def verified_? = {case (req) => {
     getInfo(req) match {
-      case Full(auth) => if (func.isDefinedAt((auth.userName, req, validate(auth) _)))
+      case Full(auth) if (func.isDefinedAt((auth.userName, req, validate(auth) _))) =>
         func((auth.userName, req, validate(auth) _))
-      else
-        Empty
       case _ => Empty
     }
 
