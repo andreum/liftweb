@@ -2,15 +2,26 @@ package net.liftweb.http.auth
 
 import net.liftweb.util.{Can, Full, Empty}
 
+object AuthRole {
+  def apply(roleName: String) = new Role {
+    def name = roleName
+  }
+}
+
 /**
  * A Role may be assingned to a resource denominated by a path. A subject
  * that is assigned to the same role or to a role higher into the roles hierarchy
  * will have access to requested resource.
  */
-case class Role(name: String) {
+trait Role {
 
   private var parent: Can[Role] = Empty
   private var childs: List[Role] = Nil
+
+  /**
+   * The name ofthe role
+   */
+  def name: String
 
   /**
    * Add child Role(s) to this role. Node name is ensured to be unique (by name)

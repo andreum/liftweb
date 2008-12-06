@@ -56,6 +56,7 @@ class LiftServlet extends HttpServlet {
       Scheduler.snapshot // pause the Actor scheduler so we don't have threading issues
       Scheduler.shutdown
       ActorPing.shutdown
+      LiftRules.authentication.shutDown
       Log.debug("Destroyed servlet")
       // super.destroy
     } catch {
@@ -136,14 +137,18 @@ class LiftServlet extends HttpServlet {
   private def authPassed_?(req : Req) : Boolean = LiftRules.httpAuthProtectedResource.isDefinedAt(req.path) match {
     case true => val role = LiftRules.httpAuthProtectedResource(req.path)
       LiftRules.authentication.verified_?(req) match {
-        case Full(r) =>
+        case true =>
           // Check roles only ifthe resource is protected by Role.
-          role.map(resRole => r.isChildOf(resRole)) openOr true
+          role.map(resRole => {
+            userRole.get match {
+              case Full(r) => r.isChildOf(resRole)
+              case _ => false
+            }
+          }) openOr true
         case _ => false
       }
     case _ => true
   }
-
 
   /**
    * Service the HTTP request
