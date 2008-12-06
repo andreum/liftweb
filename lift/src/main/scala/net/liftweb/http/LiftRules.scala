@@ -567,7 +567,6 @@ object LiftRules {
   }
 
   def addDispatchBefore(pf: DispatchPf) = {
-    println("addDispatchBefore")
     dispatchTable_i = pf orElse dispatchTable_i
     dispatchTable_i
   }

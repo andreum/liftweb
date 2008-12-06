@@ -104,8 +104,6 @@ case class HttpDigestAuthentication(realmName: String)(func: PartialFunction[(St
 
   def getInfo(req: Req) : Can[DigestAuthentication] = header(req).map(auth => {
 
-     S.session.map(ls => println("Session ID " + ls.httpSession.getId))
-
 	 val info = auth.substring(7,auth.length)
      val pairs = splitNameValuePairs(info)
      DigestAuthentication(req.request.getMethod.toUpperCase, pairs("username"), pairs("realm"), pairs("nonce"),
