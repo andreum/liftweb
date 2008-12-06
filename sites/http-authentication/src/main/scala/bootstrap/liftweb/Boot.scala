@@ -18,7 +18,7 @@ class Boot {
 
     val entries =
     Menu(Loc("Home", "index" :: Nil, "Home")) ::
-    Menu(Loc("Secured", "secure" :: Nil, "Secured", Loc.HttpAuthProtected(() => Role("user")))) ::
+    Menu(Loc("Secured", "secure" :: Nil, "Secured", Loc.HttpAuthProtected(() => AuthRole("user")))) ::
     Nil
 
     LiftRules.setSiteMap(SiteMap(entries: _*));
@@ -26,7 +26,7 @@ class Boot {
 
 
     // LiftRules.httpAuthProtectedResource = {
-    //  case (ParsePath("secure" :: _, _, _, _)) => Full(Role("user"))
+    //  case (ParsePath("secure" :: _, _, _, _)) => Full(AuthRole("user"))
     //}
 
     /**
@@ -40,10 +40,11 @@ class Boot {
        */
       case ("tim", req, func) => if (func("badger")) {
         println("AUTH OK")
-        Full(Role("user"))
+        userRole(Full(AuthRole("user")))
+	true
       } else {
 	println("AUTH FAILED")
-        Empty
+        false
       }
     }
 
@@ -51,7 +52,7 @@ class Boot {
     // if you want to use Basic authentication scheme then use this instead:
 
      LiftRules.authentication = HttpBasicAuthentication("lift") {
-       case ("marius", "12test34", req) => println("marius is authenticated !"); Full(Role("user"))
+       case ("marius", "12test34", req) => println("marius is authenticated !"); userRole(Full(AuthRole("user"))); true;
      }
     */
 
