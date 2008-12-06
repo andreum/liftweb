@@ -18,7 +18,7 @@ class Boot {
 
     val entries =
     Menu(Loc("Home", "index" :: Nil, "Home")) ::
-    Menu(Loc("Secured", "secure" :: Nil, "Secured", Loc.HttpAuthProtected(() => AuthRole("user")))) ::
+    Menu(Loc("Secured", "secure" :: Nil, "Secured", Loc.HttpAuthProtected(() => Full(AuthRole("user"))))) ::
     Nil
 
     LiftRules.setSiteMap(SiteMap(entries: _*));
