@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <archetype-descriptor name="Lift-JPA">
+  <id>lift-jpa-archetype</id>
   <modules>
     <module id="webapp" dir="webapp" name="webapp">
       <fileSets>
